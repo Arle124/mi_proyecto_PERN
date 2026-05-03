@@ -1,14 +1,232 @@
-// This is your Prisma schema file
+// ============================================================
+// schema.prisma — Sistema de Gestión de Viajes | Novapalma
+// Base de datos: PostgreSQL
+// Principios aplicados: SOLID, RBAC, Auditoría, Soft Delete
+// ============================================================
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// ============================================================
+// ENUMS — Dominio controlado (abierto a extensión sin romper
+//         el contrato existente — Principio Open/Closed)
+// ============================================================
+
+enum Role {
+  ADMIN     // Gestión total: usuarios, conductores, vehículos, viajes, tarifas
+  OPERADOR  // Solo registro y consulta de viajes
+}
+
+enum TripType {
+  NORMAL
+  ESPECIAL
+}
+
+enum PaymentType {
+  EFECTIVO
+  TRANSFERENCIA
+  CREDITO
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE   // eliminación lógica
+  LOGIN
+  LOGOUT
+}
+
+// ============================================================
+// USER — Autenticación + RBAC (RF01, RF02, RF03, RF14, RNF01)
+// ============================================================
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        String   @id @default(uuid()) @db.Uuid
+  nombre    String   @db.VarChar(120)
+  correo    String   @unique @db.VarChar(200)
+  password  String   // bcrypt hash — nunca texto plano (RNF01)
+  rol       Role     @default(OPERADOR)
+  activo    Boolean  @default(true)   // inhabilitación lógica (RF03)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones de responsabilidad
+  tripsRegistered Trip[]       @relation("TripRegisteredBy")
+  tripsUpdated    Trip[]       @relation("TripUpdatedBy")
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+// ============================================================
+// DRIVER — Gestión de conductores (RF05, RF06)
+// ============================================================
+
+model Driver {
+  id        String   @id @default(uuid()) @db.Uuid
+  cedula    String   @unique @db.VarChar(20)   // cédula colombiana
+  nombre    String   @db.VarChar(120)
+  telefono  String?  @db.VarChar(20)           // sugerido: contacto operativo
+  activo    Boolean  @default(true)             // RF06: solo conductores activos
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trips Trip[]
+
+  @@map("drivers")
+}
+
+// ============================================================
+// VEHICLE — Control de placas (RF04)
+// ============================================================
+
+model Vehicle {
+  id     String  @id @default(uuid()) @db.Uuid
+  placa  String  @unique @db.VarChar(8)   // formato colombiano: ABC123 / ABC12D
+  modelo String? @db.VarChar(100)
+  activo Boolean @default(true)           // permite dar de baja vehículos
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trips Trip[]
+
+  @@map("vehicles")
+}
+
+// ============================================================
+// RATE_TARIFF — Tarifas por tipo de viaje (RF09, RF10)
+// Tabla de configuración: separa reglas de negocio del código
+// ============================================================
+
+model RateTariff {
+  id         Int      @id @default(autoincrement())
+  tipoViaje  TripType @unique              // una tarifa por tipo
+  valorTon   Decimal  @db.Decimal(12, 2)  // precio por tonelada
+  activo     Boolean  @default(true)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("rate_tariffs")
+}
+
+// ============================================================
+// TRIP — Núcleo del sistema (RF04, RF07–RF13)
+// ============================================================
+
+model Trip {
+  id             String      @id @default(uuid()) @db.Uuid
+
+  // Identificación del viaje
+  ticket         String      @unique @db.VarChar(50)  // RF07: único
+  fecha          DateTime                             // RF08: obligatorio
+  origen         String      @db.VarChar(150)
+  tipoViaje      TripType                             // RF09
+  tipoPago       PaymentType @default(EFECTIVO)
+
+  // Carga y pago
+  tonelaje       Decimal     @db.Decimal(10, 3)       // toneladas con 3 dec.
+  valorPago      Decimal     @db.Decimal(12, 2)        // RF10
+  consumoAcpm    Decimal?    @db.Decimal(8, 3)         // opcional
+  usoFerry       Boolean     @default(false)           // opcional
+
+  // Relaciones principales
+  driverId       String      @db.Uuid
+  driver         Driver      @relation(fields: [driverId], references: [id])
+
+  vehicleId      String      @db.Uuid
+  vehicle        Vehicle     @relation(fields: [vehicleId], references: [id])
+
+  // Trazabilidad de quién hizo qué (auditoría básica — RF13)
+  registradoPorId  String    @db.Uuid
+  registradoPor    User      @relation("TripRegisteredBy", fields: [registradoPorId], references: [id])
+
+  actualizadoPorId String?   @db.Uuid
+  actualizadoPor   User?     @relation("TripUpdatedBy", fields: [actualizadoPorId], references: [id])
+
+  // Soft delete (RF12: eliminación lógica con restricción por rol)
+  deletedAt      DateTime?   // null = activo | fecha = eliminado
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Índices para reportes y filtros (RF — búsquedas y reportes mensuales)
+  @@index([fecha])
+  @@index([driverId])
+  @@index([vehicleId])
+  @@index([tipoViaje])
+  @@index([deletedAt])           // filtrar registros activos eficientemente
+  @@index([fecha, driverId])     // reporte mensual por conductor
+  @@index([fecha, vehicleId])    // reporte mensual por vehículo
+
+  @@map("trips")
+}
+
+// ============================================================
+// AUDIT_LOG — Tabla de auditoría completa
+// Registra QUIÉN hizo QUÉ sobre QUÉ entidad y CUÁNDO
+// Principio de Responsabilidad Única: la auditoría es su propio contexto
+// ============================================================
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+
+  // Quién
+  userId      String?     @db.Uuid          // null si fue acción de sistema
+  user        User?       @relation(fields: [userId], references: [id])
+
+  // Qué acción
+  action      AuditAction
+
+  // Sobre qué entidad
+  entity      String      @db.VarChar(50)   // Ej: "Trip", "Driver", "User"
+  entityId    String?     @db.VarChar(100)  // ID del registro afectado
+
+  // Detalles del cambio (snapshot JSON antes/después)
+  oldValues   Json?       // estado anterior
+  newValues   Json?       // estado nuevo
+
+  // Contexto técnico
+  ipAddress   String?     @db.VarChar(45)   // IPv4 o IPv6
+  userAgent   String?     @db.VarChar(500)
+
+  createdAt   DateTime    @default(now())
+
+  // Solo INSERT en esta tabla — nunca UPDATE ni DELETE
+  // La inmutabilidad del log es garantía de integridad
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@index([action])
+
+  @@map("audit_logs")
+}
+
+// ============================================================
+// REFRESH_TOKEN — Gestión segura de sesiones (RNF01, RF01)
+// Permite invalidar sesiones individuales sin borrar el usuario
+// ============================================================
+
+model RefreshToken {
+  id          String   @id @default(uuid()) @db.Uuid
+  token       String   @unique @db.VarChar(512)
+  userId      String   @db.Uuid
+  expiresAt   DateTime
+  revoked     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+
+  @@map("refresh_tokens")
 }
