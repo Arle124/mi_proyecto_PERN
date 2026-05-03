@@ -58,9 +58,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relaciones de responsabilidad
-  tripsRegistered Trip[]       @relation("TripRegisteredBy")
-  tripsUpdated    Trip[]       @relation("TripUpdatedBy")
-  auditLogs       AuditLog[]
+  tripsRegistered Trip[]       @relation("TripRegisteredBy") // Viajes registrados por este usuario
+  tripsUpdated    Trip[]       @relation("TripUpdatedBy")   // Viajes actualizados por este usuario
+  auditLogs       AuditLog[]     // Auditoría realizada por este usuario
 
   @@map("users")
 }
@@ -79,7 +79,7 @@ model Driver {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trips Trip[]
+  trips Trip[]     // Viajes realizados por este conductor
 
   @@map("drivers")
 }
@@ -97,7 +97,7 @@ model Vehicle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trips Trip[]
+  trips Trip[]     // Viajes realizados con este vehículo
 
   @@map("vehicles")
 }
@@ -141,17 +141,17 @@ model Trip {
 
   // Relaciones principales
   driverId       String      @db.Uuid
-  driver         Driver      @relation(fields: [driverId], references: [id])
+  driver         Driver      @relation(fields: [driverId], references: [id]) // Conductor asignado al viaje
 
   vehicleId      String      @db.Uuid
-  vehicle        Vehicle     @relation(fields: [vehicleId], references: [id])
+  vehicle        Vehicle     @relation(fields: [vehicleId], references: [id]) // Vehículo utilizado en el viaje
 
   // Trazabilidad de quién hizo qué (auditoría básica — RF13)
   registradoPorId  String    @db.Uuid
-  registradoPor    User      @relation("TripRegisteredBy", fields: [registradoPorId], references: [id])
+  registradoPor    User      @relation("TripRegisteredBy", fields: [registradoPorId], references: [id]) // Usuario que registró el viaje
 
   actualizadoPorId String?   @db.Uuid
-  actualizadoPor   User?     @relation("TripUpdatedBy", fields: [actualizadoPorId], references: [id])
+  actualizadoPor   User?     @relation("TripUpdatedBy", fields: [actualizadoPorId], references: [id]) // Usuario que actualizó el viaje
 
   // Soft delete (RF12: eliminación lógica con restricción por rol)
   deletedAt      DateTime?   // null = activo | fecha = eliminado
@@ -182,7 +182,7 @@ model AuditLog {
 
   // Quién
   userId      String?     @db.Uuid          // null si fue acción de sistema
-  user        User?       @relation(fields: [userId], references: [id])
+  user        User?       @relation(fields: [userId], references: [id]) // Usuario que realizó la acción
 
   // Qué acción
   action      AuditAction
