@@ -90,18 +90,27 @@ model Driver {
   @@map("drivers")
 }
 
+enum VehicleStatus {
+  DISPONIBLE
+  EN_VIAJE
+  MANTENIMIENTO
+}
+
 // ============================================================
 // VEHÍCULOS — Control de Flota (RF04)
 // ============================================================
 
 model Vehicle {
-  id        String    @id @default(uuid()) @db.Uuid
-  placa     String    @unique @db.VarChar(8)
-  modelo    String?   @db.VarChar(100)
-  activo    Boolean   @default(true)
+  id        String        @id @default(uuid()) @db.Uuid
+  placa     String        @unique @db.VarChar(8)
+  marca     String        @db.VarChar(50)
+  modelo    String        @db.VarChar(100)
+  capacidad Decimal       @db.Decimal(10, 2) // En toneladas
+  estado    VehicleStatus @default(DISPONIBLE)
+  activo    Boolean       @default(true)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
   deletedAt DateTime?
 
   trips     Trip[]
