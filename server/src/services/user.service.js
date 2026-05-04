@@ -1,10 +1,22 @@
 import { prisma } from '../config/db.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import * as auditService from './audit.service.js';
 
 export const getAllUsers = async () => {
   return await prisma.user.findMany({
-    where: { deletedAt: null }
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      primerNombre: true,
+      segundoNombre: true,
+      primerApellido: true,
+      segundoApellido: true,
+      correo: true,
+      rol: true,
+      activo: true,
+      createdAt: true,
+      updatedAt: true
+    }
   });
 };
 
@@ -28,7 +40,7 @@ export const createUser = async (userData, creatorId = null) => {
 
     // 2. Registrar en Auditoría Forense
     await auditService.logAudit({
-      userId: creatorId, // ID del administrador que lo crea, si aplica
+      userId: creatorId,
       action: 'CREATE',
       entity: 'User',
       entityId: newUser.id,
@@ -41,7 +53,9 @@ export const createUser = async (userData, creatorId = null) => {
 
     console.log(`🛡️ Auditoría Forense confirmada para el usuario: ${newUser.correo}`);
 
-    return newUser;
+    // Retornar usuario sin password
+    const { password, ...userWithoutPassword } = newUser;
+    return userWithoutPassword;
   });
 };
 

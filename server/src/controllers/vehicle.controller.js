@@ -2,7 +2,7 @@ import * as vehicleService from '../services/vehicle.service.js';
 
 export const create = async (req, res) => {
   try {
-    const vehicle = await vehicleService.createVehicle(req.body);
+    const vehicle = await vehicleService.createVehicle(req.body, req.user.id);
     res.status(201).json(vehicle);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -30,7 +30,7 @@ export const getById = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
-    const vehicle = await vehicleService.updateVehicle(req.params.id, req.body);
+    const vehicle = await vehicleService.updateVehicle(req.params.id, req.body, req.user.id);
     res.json(vehicle);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -39,7 +39,7 @@ export const update = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
-    const vehicle = await vehicleService.deleteVehicle(req.params.id);
+    const vehicle = await vehicleService.deleteVehicle(req.params.id, req.user.id);
     res.json({ message: 'Vehículo eliminado (Soft Delete)', vehicle });
   } catch (error) {
     res.status(400).json({ error: error.message });
