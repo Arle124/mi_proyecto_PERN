@@ -1,7 +1,7 @@
 import { prisma } from '../config/db.js';
 
 /**
- * Registra una acción en el log de auditoría forense.
+ * Registra una acción en el log de auditoría.
  * @param {Object} auditData - Datos de la auditoría.
  * @param {string} auditData.userId - ID del usuario que realiza la acción.
  * @param {string} auditData.action - Acción (CREATE, UPDATE, DELETE, etc).
@@ -26,7 +26,7 @@ export const logAudit = async (auditData, tx = prisma) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error en Auditoría Forense:', error);
+    console.error('❌ Error en Auditoría:', error);
     throw error; // Re-lanzar para asegurar que la transacción falle si la auditoría falla
   }
 };

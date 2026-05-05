@@ -8,9 +8,11 @@ const adapter = new PrismaPg(pool);
 
 export default defineConfig({
   datasource: {
-    url: process.env.DATABASE_URL, // Para que Migrate sepa a dónde ir
+    url: process.env.DATABASE_URL,
   },
-  // Esto es lo que te pedía el error para el Cliente
+  migrations: {
+    seed: 'node seed.js',
+  },
   client: {
     adapter,
   }

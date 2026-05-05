@@ -116,6 +116,24 @@ El sistema implementa una arquitectura de seguridad multicapa para cumplir con l
 *   **Hashing de Contraseñas (RNF01):** Se utiliza `bcryptjs` con un factor de costo de 10 para cifrar las contraseñas antes de su almacenamiento. El sistema aplica una política de "Zero Visibility", donde las contraseñas nunca son devueltas en las peticiones API mediante la cláusula `select` de Prisma y desestructuración de objetos en la capa de servicios.
 *   **Autenticación JWT (RF01):** La autenticación se gestiona mediante **JSON Web Tokens**.
     *   **Flujo:** Tras un login exitoso en `/api/auth/login`, el servidor emite un token firmado con una validez de 8 horas.
+    *   **Payload:** El JWT incluye el `id` y el `rol` del usuario, lo que permite una trazabilidad inmediata y eficiente sin consultas redundantes a la base de datos.
     *   **Transporte:** El cliente debe incluir este token en el header `Authorization: Bearer <token>` para todas las peticiones a rutas protegidas.
+*   **Control de Acceso Basado en Roles (RBAC):** Se implementa una capa de autorización mediante `role.middleware.js`.
+    *   **`adminMiddleware`:** Restringe el acceso a endpoints sensibles (como la gestión de usuarios) exclusivamente a usuarios con el rol `ADMIN`.
 *   **Middleware de Guardia (`authMiddleware`):** Intercepta las peticiones, valida la firma del token y el tiempo de expiración. Una vez validado, inyecta el ID y el Rol del usuario en el objeto `req.user`.
 *   **Contexto de Auditoría:** La integración de la seguridad permite que el `auditService` capture automáticamente la identidad del actor que realiza mutaciones en los módulos de Vehículos y Usuarios, garantizando la trazabilidad forense total.
+
+---
+
+### 11. Catálogo de Endpoints y Seguridad
+
+| Módulo | Endpoint | Método | Middleware de Seguridad | Descripción |
+| :--- | :--- | :--- | :--- | :--- |
+| **Auth** | `/api/auth/login` | POST | Público | Inicio de sesión y emisión de JWT. |
+| **Usuarios** | `/api/usuarios` | GET | `authMiddleware` + `isAdmin` | Listar todos los usuarios. |
+| **Usuarios** | `/api/usuarios` | POST | `authMiddleware` + `isAdmin` | Registrar un nuevo usuario. |
+| **Vehículos** | `/api/vehiculos` | GET | `authMiddleware` | Listar flota vehicular. |
+| **Vehículos** | `/api/vehiculos/:id` | GET | `authMiddleware` | Detalle de un vehículo específico. |
+| **Vehículos** | `/api/vehiculos` | POST | `authMiddleware` | Registrar nuevo vehículo. |
+| **Vehículos** | `/api/vehiculos/:id` | PUT | `authMiddleware` | Actualizar datos de vehículo. |
+| **Vehículos** | `/api/vehiculos/:id` | DELETE | `authMiddleware` | Baja lógica (Soft Delete) de vehículo. |

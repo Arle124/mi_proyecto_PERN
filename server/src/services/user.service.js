@@ -38,7 +38,7 @@ export const createUser = async (userData, creatorId = null) => {
       }
     });
 
-    // 2. Registrar en Auditoría Forense
+    // 2. Registrar en Auditoría
     await auditService.logAudit({
       userId: creatorId,
       action: 'CREATE',
@@ -51,7 +51,7 @@ export const createUser = async (userData, creatorId = null) => {
       }
     }, tx);
 
-    console.log(`🛡️ Auditoría Forense confirmada para el usuario: ${newUser.correo}`);
+    console.log(`🛡️ Auditoría confirmada para el usuario: ${newUser.correo}`);
 
     // Retornar usuario sin password
     const { password, ...userWithoutPassword } = newUser;
