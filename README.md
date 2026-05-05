@@ -46,9 +46,9 @@ npm run seed
 ```
 
 ### Ejecución del Proyecto
-Para iniciar el servidor con recarga automática mediante `nodemon`:
+Para iniciar el servidor con node.js:
 ```bash
-npm run dev
+node index.js
 ```
 
 Para iniciar el cliente de React:
