@@ -1,26 +1,28 @@
 import axios from 'axios';
 
+/**
+ * Instancia de Axios con Hardening de Seguridad.
+ * Como DevOps Senior, habilitamos 'withCredentials' para permitir el envío automático
+ * de Cookies HttpOnly en cada petición, eliminando la necesidad de manejar tokens en JS.
+ */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  withCredentials: true, // Crucial: Permite el transporte de cookies de sesión
 });
 
-// Interceptor para añadir el token JWT a todas las peticiones
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Interceptor para manejar errores globales (ej: 401 Unauthorized)
+// Interceptor para manejar errores globales de infraestructura
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Si el servidor retorna 401, la sesión ha expirado o es inválida
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
+      // Limpiamos el estado local del usuario (pero el token ya está protegido en la cookie)
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      
+      // Evitamos redirecciones infinitas si ya estamos en el login
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

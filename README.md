@@ -5,17 +5,17 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-latest-blue?style=flat-square&logo=postgresql)
 ![Prisma](https://img.shields.io/badge/Prisma-v7.8.0-2D3748?style=flat-square&logo=prisma)
 
-## 📋 Descripción
+## Descripción
 Novapalma es una plataforma integral de gestión logística y financiera diseñada para optimizar la cadena de suministro y el control operativo. Este proyecto de Ingeniería de Software implementa una arquitectura robusta basada en el stack **PERN** (PostgreSQL, Express, React, Node.js), priorizando la integridad de los datos y la trazabilidad forense.
 
-## 🛠️ Stack Técnico
+## Stack Técnico
 - **Backend:** Node.js v25 con Express.
 - **Frontend:** React (Vite) para una interfaz ágil y moderna.
 - **Base de Datos:** PostgreSQL.
 - **ORM:** Prisma v7.8.0 optimizado con `@prisma/adapter-pg` para garantizar estabilidad total en entornos Linux y compatibilidad nativa con las últimas versiones de Node.
 - **Validación:** Esquemas de Zod para garantizar la integridad de los datos en el nivel de entrada.
 
-## 🔐 Seguridad y Autorización
+## Seguridad y Autorización
 El sistema implementa una arquitectura de seguridad multicapa:
 - **Autenticación:** Gestión de sesiones mediante JSON Web Tokens (JWT).
 - **RBAC (Role-Based Access Control):** Control de acceso basado en roles.
@@ -24,7 +24,7 @@ El sistema implementa una arquitectura de seguridad multicapa:
 - **Cifrado:** Hashing de contraseñas con `bcryptjs` (10 salt rounds).
 - **Auditoría:** Registro inmutable de transacciones críticas (`audit_logs`) con snapshots de cambios.
 
-## 🚀 Guía de Inicio
+## Guía de Inicio
 
 ### Requisitos Previos
 - Node.js v25 o superior.

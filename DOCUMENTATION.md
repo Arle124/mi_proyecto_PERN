@@ -135,5 +135,50 @@ El sistema implementa una arquitectura de seguridad multicapa para cumplir con l
 | **Vehículos** | `/api/vehiculos` | GET | `authMiddleware` | Listar flota vehicular. |
 | **Vehículos** | `/api/vehiculos/:id` | GET | `authMiddleware` | Detalle de un vehículo específico. |
 | **Vehículos** | `/api/vehiculos` | POST | `authMiddleware` | Registrar nuevo vehículo. |
-| **Vehículos** | `/api/vehiculos/:id` | PUT | `authMiddleware` | Actualizar datos de vehículo. |
-| **Vehículos** | `/api/vehiculos/:id` | DELETE | `authMiddleware` | Baja lógica (Soft Delete) de vehículo. |
+| **Vehículos** | `/api/vehiculos/:id` | PUT | `authMiddleware` + `isAdmin` | Actualizar datos de vehículo. |
+| **Vehículos** | `/api/vehiculos/:id` | DELETE | `authMiddleware` + `isAdmin` | Baja lógica (Soft Delete). |
+| **Conductores** | `/api/conductores` | GET | `authMiddleware` | Listar todos los conductores. |
+| **Conductores** | `/api/conductores/:id` | GET | `authMiddleware` | Detalle de un conductor. |
+| **Conductores** | `/api/conductores` | POST | `authMiddleware` | Registrar nuevo conductor. |
+| **Conductores** | `/api/conductores/:id` | PUT | `authMiddleware` + `isAdmin` | Actualizar datos de conductor. |
+| **Conductores** | `/api/conductores/:id` | DELETE | `authMiddleware` + `isAdmin` | Baja lógica de conductor. |
+| **Viajes** | `/api/viajes` | GET | `authMiddleware` | Listar historial de viajes. |
+| **Viajes** | `/api/viajes/:id` | GET | `authMiddleware` | Detalle técnico de un viaje. |
+| **Viajes** | `/api/viajes` | POST | `authMiddleware` | Registrar nuevo viaje (ACID). |
+| **Viajes** | `/api/viajes/:id` | PUT | `authMiddleware` | Actualizar viaje y re-calcular. |
+| **Viajes** | `/api/viajes/:id` | DELETE | `authMiddleware` + `isAdmin` | Eliminación forense de viaje. |
+| **Tarifas** | `/api/tarifas` | GET | `authMiddleware` | Consultar tarifario vigente. |
+| **Tarifas** | `/api/tarifas` | POST | `authMiddleware` + `isAdmin` | Configurar/Upsert de tarifas base. |
+
+---
+
+### 12. Seguridad Avanzada e Infraestructura (Hardening)
+
+Como parte de la evolución hacia un sistema de grado empresarial, se ha implementado una capa de seguridad perimetral y de transporte robusta.
+
+#### 12.1. Blindaje de Transporte (HttpOnly Cookies)
+Para mitigar ataques de **Cross-Site Scripting (XSS)**, el sistema ha migrado de la gestión de tokens en `localStorage` a **Cookies HttpOnly**.
+*   **Aislamiento del Token:** El JWT es gestionado directamente por el navegador. El código JavaScript del cliente no puede acceder al token via `document.cookie`, lo que anula la posibilidad de robo de sesión mediante scripts maliciosos.
+*   **Configuración Enterprise:** Las cookies se emiten con flags `Strict` para `SameSite` (prevención de CSRF) y `Secure` en entornos de producción.
+*   **Transparencia con Axios:** La capa de API (`axios.js`) utiliza `withCredentials: true`, permitiendo que el navegador adjunte automáticamente la cookie de sesión en cada petición hacia el dominio del backend.
+
+#### 12.2. Protección de Cabeceras (Helmet.js)
+Se utiliza **Helmet** para configurar automáticamente cabeceras de seguridad HTTP esenciales:
+*   **Content-Security-Policy:** Previene la ejecución de scripts no autorizados.
+*   **X-Frame-Options:** Protege contra ataques de Clickjacking.
+*   **Strict-Transport-Security:** Fuerza la comunicación sobre canales cifrados (HSTS).
+
+#### 12.3. Prevención de Abuso (Rate Limiting)
+Para proteger la infraestructura contra ataques de denegación de servicio (DoS) y fuerza bruta, se ha implementado un limitador de tasa de peticiones.
+*   **Umbral:** 100 peticiones por cada ventana de 15 minutos por IP.
+*   **Visibilidad:** El sistema informa al cliente sobre su estado de consumo mediante cabeceras estándar `RateLimit-*`.
+
+#### 12.4. Sanitización y Control de Payload
+*   **Límite de Body:** El servidor restringe el tamaño de las peticiones JSON a **10kb**, mitigando ataques de saturación de memoria por payloads excesivamente grandes.
+*   **Manejo de Errores Silencioso:** En entornos de producción, el sistema nunca filtra trazas de error (stack traces) al cliente final, devolviendo mensajes genéricos para evitar la fuga de información técnica sobre la infraestructura.
+
+---
+
+### 13. Cultura DevOps: Comentarios de Código Senior
+
+Siguiendo las mejores prácticas de ingeniería, el código fuente ha sido enriquecido con comentarios de estilo **DevOps Senior**. Estos comentarios no solo explican *qué* hace el código, sino el *por qué* de cada decisión técnica, facilitando la comprensión de la infraestructura para futuros auditores y desarrolladores.
