@@ -88,18 +88,17 @@ export const deleteVehicle = async (id, userId = null) => {
       where: { id },
       data: {
         deletedAt: new Date(),
-        activo: false,
-        estado: 'MANTENIMIENTO'
+        activo: false
       }
     });
 
     await auditService.logAudit({
       userId,
-      action: 'DELETE', // O UPDATE (Soft Delete) según convención
+      action: 'DELETE',
       entity: 'Vehicle',
       entityId: id,
       oldValues: oldVehicle,
-      newValues: { deletedAt: deletedVehicle.deletedAt, activo: false, estado: 'MANTENIMIENTO' }
+      newValues: { deletedAt: deletedVehicle.deletedAt, activo: false }
     }, tx);
 
     console.log(`🗑️ Soft Delete aplicado al vehículo ${oldVehicle.placa}. 🛡️ Auditoría registrada.`);
