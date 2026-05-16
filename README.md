@@ -15,47 +15,54 @@ Novapalma es una plataforma integral de gestión logística y financiera diseña
 - **ORM:** Prisma v7.8.0 optimizado con `@prisma/adapter-pg` para garantizar estabilidad total en entornos Linux y compatibilidad nativa con las últimas versiones de Node.
 - **Validación:** Esquemas de Zod para garantizar la integridad de los datos en el nivel de entrada.
 
+## Características Principales
+- **Gestión de Viajes:** Control total de tickets, pesos, orígenes y tipos de servicios con transacciones ACID.
+- **Flota y Conductores:** Registro detallado de vehículos y personal operativo.
+- **Gestión de Tarifas:** Módulo administrativo para el control de precios por tonelada (Normal/Especial).
+- **Seguridad Forense:** Auditoría completa de todas las acciones críticas.
+
 ## Seguridad y Autorización
 El sistema implementa una arquitectura de seguridad multicapa:
-- **Autenticación:** Gestión de sesiones mediante JSON Web Tokens (JWT).
+- **Autenticación:** Gestión de sesiones seguras mediante JSON Web Tokens (JWT) y cookies.
 - **RBAC (Role-Based Access Control):** Control de acceso basado en roles.
-  - **Admin:** Acceso total, gestión de usuarios y configuración del sistema.
-  - **Operador:** Gestión operativa de la flota y procesos logísticos.
-- **Cifrado:** Hashing de contraseñas con `bcryptjs` (10 salt rounds).
-- **Auditoría:** Registro inmutable de transacciones críticas (`audit_logs`) con snapshots de cambios.
+  - **Admin:** Acceso total, gestión de usuarios, auditoría y configuración de tarifas.
+  - **Operador:** Gestión operativa de la flota y registro de viajes.
+- **Hardening:** Implementación de `helmet`, `express-rate-limit` y validación estricta de esquemas con `Zod`.
+- **Cifrado:** Hashing de contraseñas con `bcryptjs`.
+- **Auditoría:** Registro inmutable de transacciones críticas (`audit_logs`) con snapshots `before/after`.
 
 ## Guía de Inicio
 
 ### Requisitos Previos
 - Node.js v25 o superior.
-- Instancia de PostgreSQL (Base de datos: `mi_proyecto_pern`).
+- Instancia de PostgreSQL.
 
-### Configuración del Servidor
+### Configuración del Entorno
+1. Configure el archivo `.env` en la carpeta `server/` basándose en `.env.example`.
+2. Ejecute los siguientes comandos:
+
 ```bash
-# Entrar al directorio del servidor
+# Servidor
 cd server
-
-# Instalar dependencias
 npm install
-
-# Generar el cliente de Prisma
 npx prisma generate
-
-# Poblar la base de datos con datos iniciales (Admin predeterminado)
+npx prisma migrate dev --name init # Si es la primera vez
 npm run seed
+
+# Cliente
+cd ../client
+npm install
 ```
 
 ### Ejecución del Proyecto
-Para iniciar el servidor con node.js:
+Para iniciar el sistema completo:
 ```bash
+# Terminal 1: Servidor
+cd server
 node index.js
-```
 
-Para iniciar el cliente de React:
-```bash
-# En una nueva terminal
+# Terminal 2: Cliente
 cd client
-npm install
 npm run dev
 ```
 
