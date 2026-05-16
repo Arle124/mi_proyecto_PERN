@@ -5,7 +5,7 @@ Este documento detalla la arquitectura, decisiones de diseño y estándares téc
 
 ---
 
-### 1. Patrón MVC Potenciado (Service-Controller Pattern)
+### 1. Patrón MVC Mejorado (Service-Controller Pattern)
 
 El proyecto implementa una evolución del patrón Model-View-Controller tradicional, denominada **MVC Potenciado**. Esta arquitectura introduce una capa de abstracción adicional para desacoplar la lógica de transporte de la lógica de dominio.
 
