@@ -36,7 +36,7 @@ export const createTrip = async (tripData, userId) => {
     const newTrip = await tx.trip.create({
       data: {
         ticket: tripData.ticket,
-        fecha: tripData.fecha,
+        fecha: new Date(tripData.fecha), // Conversión explícita a objeto Date
         origen: tripData.origen,
         tipoViaje: tripData.tipoViaje,
         tipoPago: tripData.tipoPago,
@@ -123,6 +123,11 @@ export const updateTrip = async (id, updateData, userId) => {
 
     const dataToUpdate = { ...updateData };
     dataToUpdate.actualizadoPorId = userId;
+    
+    // Si viene una fecha, aseguramos el formato Date
+    if (updateData.fecha) {
+      dataToUpdate.fecha = new Date(updateData.fecha);
+    }
 
     // 2. Si cambia el vehículo, gestionar estados
     if (updateData.vehicleId && updateData.vehicleId !== oldTrip.vehicleId) {

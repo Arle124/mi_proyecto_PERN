@@ -1,7 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
 
-const prisma = new PrismaClient();
+dotenv.config();
+
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Iniciando poblamiento de base de datos...');
@@ -39,9 +46,11 @@ async function main() {
   console.log(`👤 Usuario Operador: ${operator.correo}`);
 
   // 3. Crear Tarifas Base
+  // Para el viaje NORMAL (Fruta): $25 pesos por kg = $25,000 por tonelada.
+  // Para el viaje ESPECIAL: $600,000 como tarifa base de prueba.
   const tariffs = [
-    { tipoViaje: 'NORMAL', valorTon: 150000.00 },
-    { tipoViaje: 'ESPECIAL', valorTon: 220000.00 }
+    { tipoViaje: 'NORMAL', valorTon: 25000.00 },
+    { tipoViaje: 'ESPECIAL', valorTon: 600000.00 }
   ];
 
   for (const tariff of tariffs) {
