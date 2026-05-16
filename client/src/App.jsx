@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Trips from './pages/Trips';
 import Vehicles from './pages/Vehicles';
 import Drivers from './pages/Drivers';
+import Tariffs from './pages/Tariffs';
 
 // Componentes Placeholder para otros módulos (MVP Vertical Slice)
 const Users = () => <div><h4>Módulo de Usuarios</h4><p>Panel de Administración de Personal.</p></div>;
@@ -89,6 +90,14 @@ function App() {
             element={
               <AdminRoute>
                 <Layout><Users /></Layout>
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/tarifas" 
+            element={
+              <AdminRoute>
+                <Layout><Tariffs /></Layout>
               </AdminRoute>
             } 
           />

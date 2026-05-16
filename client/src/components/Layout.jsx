@@ -6,7 +6,8 @@ import {
   MapPin, 
   LogOut, 
   LayoutDashboard, 
-  UserCircle 
+  UserCircle,
+  Banknote
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -41,9 +42,14 @@ const Layout = ({ children }) => {
             <Truck size={20} /> Vehículos
           </NavLink>
           {isAdmin() && (
-            <NavLink to="/usuarios" className="nav-link">
-              <Users size={20} /> Usuarios
-            </NavLink>
+            <>
+              <NavLink to="/usuarios" className="nav-link">
+                <Users size={20} /> Usuarios
+              </NavLink>
+              <NavLink to="/tarifas" className="nav-link">
+                <Banknote size={20} /> Tarifas
+              </NavLink>
+            </>
           )}
         </nav>
 
