@@ -73,8 +73,12 @@ def parse_prisma(file_path):
     return data
 
 def main():
-    prisma_path = 'mi-proyecto-pern/server/prisma/schema.prisma'
-    output_path = 'mi-proyecto-pern/Diccionario_Datos_V2_Sincronizado.xlsx'
+    import os
+    prisma_path = 'server/prisma/schema.prisma'
+    output_path = 'Diccionario_Datos_V2_Sincronizado.xlsx'
+    if not os.path.exists(prisma_path):
+        prisma_path = 'mi-proyecto-pern/server/prisma/schema.prisma'
+        output_path = 'mi-proyecto-pern/Diccionario_Datos_V2_Sincronizado.xlsx'
     
     try:
         data = parse_prisma(prisma_path)
