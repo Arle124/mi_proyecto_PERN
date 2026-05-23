@@ -20,15 +20,13 @@ enum Role {
   OPERADOR
 }
 
-enum TripType {
-  NORMAL
-  ESPECIAL
+enum ProductType {
+  FRUTO
+  COMPOST
 }
 
 enum PaymentType {
-  EFECTIVO
   TRANSFERENCIA
-  CREDITO
 }
 
 enum AuditAction {
@@ -123,13 +121,13 @@ model Vehicle {
 // ============================================================
 
 model RateTariff {
-  id           Int       @id @default(autoincrement())
-  tipoViaje    TripType  @unique
-  valorTon     Decimal   @db.Decimal(12, 2)
-  activo       Boolean   @default(true)
+  id           Int          @id @default(autoincrement())
+  producto     ProductType  @unique
+  valorKg      Decimal      @db.Decimal(12, 2)
+  activo       Boolean      @default(true)
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
 
   @@map("rate_tariffs")
@@ -141,11 +139,11 @@ model RateTariff {
 
 model Trip {
   id               String      @id @default(uuid()) @db.Uuid
-  ticket           String      @unique @db.VarChar(50)
+  ticket           Int         @unique
   fecha            DateTime
   origen           String      @db.VarChar(150)
-  tipoViaje        TripType
-  tipoPago         PaymentType @default(EFECTIVO)
+  producto         ProductType
+  tipoPago         PaymentType @default(TRANSFERENCIA)
 
   tonelaje         Decimal     @db.Decimal(10, 3)
   valorPago        Decimal     @db.Decimal(12, 2)

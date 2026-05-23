@@ -46,20 +46,18 @@ async function main() {
   console.log(`👤 Usuario Operador: ${operator.correo}`);
 
   // 3. Crear Tarifas Base
-  // Para el viaje NORMAL (Fruta): $25 pesos por kg = $25,000 por tonelada.
-  // Para el viaje ESPECIAL: $600,000 como tarifa base de prueba.
+  // Para el producto FRUTO (Fruta): $25 COP por kg.
   const tariffs = [
-    { tipoViaje: 'NORMAL', valorTon: 25000.00 },
-    { tipoViaje: 'ESPECIAL', valorTon: 600000.00 }
+    { producto: 'FRUTO', valorKg: 25.00 }
   ];
 
   for (const tariff of tariffs) {
     const t = await prisma.rateTariff.upsert({
-      where: { tipoViaje: tariff.tipoViaje },
-      update: { valorTon: tariff.valorTon },
+      where: { producto: tariff.producto },
+      update: { valorKg: tariff.valorKg },
       create: tariff,
     });
-    console.log(`💰 Tarifa configurada: ${t.tipoViaje} -> $${t.valorTon}`);
+    console.log(`💰 Tarifa configurada: ${t.producto} -> $${t.valorKg} por Kg`);
   }
 
   // 4. Vehículo de prueba
