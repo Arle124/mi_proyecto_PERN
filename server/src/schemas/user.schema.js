@@ -10,6 +10,10 @@ export const createUserSchema = z.object({
   rol: z.enum(['ADMIN', 'OPERADOR']).optional(),
 });
 
+export const updateUserSchema = createUserSchema.partial().extend({
+  activo: z.boolean().optional(),
+});
+
 export const validateUser = (data) => {
   return createUserSchema.safeParse(data);
 };

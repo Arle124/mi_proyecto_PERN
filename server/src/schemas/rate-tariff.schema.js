@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const rateTariffSchema = z.object({
-  tipoViaje: z.enum(['NORMAL', 'ESPECIAL']),
-  valorTon: z.number().positive('El valor por tonelada debe ser un número positivo'),
+  producto: z.enum(['FRUTO', 'COMPOST']),
+  valorKg: z.number().positive('El valor por kilogramo debe ser un número positivo'),
   activo: z.boolean().optional().default(true),
 });
 

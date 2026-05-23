@@ -7,19 +7,19 @@ import * as auditService from './audit.service.js';
 export const upsertRateTariff = async (tariffData, userId = null) => {
   return await prisma.$transaction(async (tx) => {
     const existingTariff = await tx.rateTariff.findUnique({
-      where: { tipoViaje: tariffData.tipoViaje }
+      where: { producto: tariffData.producto }
     });
 
     const tariff = await tx.rateTariff.upsert({
-      where: { tipoViaje: tariffData.tipoViaje },
+      where: { producto: tariffData.producto },
       update: {
-        valorTon: tariffData.valorTon,
+        valorKg: tariffData.valorKg,
         activo: tariffData.activo ?? true,
         deletedAt: null
       },
       create: {
-        tipoViaje: tariffData.tipoViaje,
-        valorTon: tariffData.valorTon,
+        producto: tariffData.producto,
+        valorKg: tariffData.valorKg,
         activo: tariffData.activo ?? true
       }
     });
@@ -33,7 +33,7 @@ export const upsertRateTariff = async (tariffData, userId = null) => {
       newValues: tariff
     }, tx);
 
-    console.log(`💰 Tarifa ${tariff.tipoViaje} configurada en $${tariff.valorTon}. 🛡️ Auditoría registrada.`);
+    console.log(`💰 Tarifa ${tariff.producto} configurada en $${tariff.valorKg} por Kg. 🛡️ Auditoría registrada.`);
     return tariff;
   });
 };
@@ -48,10 +48,10 @@ export const getAllTariffs = async () => {
 };
 
 /**
- * Obtiene tarifa por tipo de viaje.
+ * Obtiene tarifa por producto.
  */
-export const getTariffByType = async (tipoViaje) => {
+export const getTariffByProduct = async (producto) => {
   return await prisma.rateTariff.findUnique({
-    where: { tipoViaje, deletedAt: null }
+    where: { producto, deletedAt: null }
   });
 };

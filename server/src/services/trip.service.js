@@ -3,17 +3,17 @@ import * as auditService from './audit.service.js';
 
 /**
  * Crea un nuevo viaje con registro de auditoría.
- * Calcula el valor del pago basado en la tarifa actual.
+ * Calcula el valor del pago basado en la tarifa actual de kg si es FRUTO.
+ * Permite ingresar el precio estipulado manualmente si es COMPOST.
  */
 export const createTrip = async (tripData, userId) => {
   return await prisma.$transaction(async (tx) => {
-    // 1. Validar que el vehículo esté disponible
+    // 1. Validar que el vehículo esté activo
     const vehicle = await tx.vehicle.findUnique({
       where: { id: tripData.vehicleId }
     });
 
     if (!vehicle || !vehicle.activo) throw new Error('Vehículo no encontrado o inactivo');
-    if (vehicle.estado !== 'DISPONIBLE') throw new Error(`El vehículo ${vehicle.placa} no está disponible (Estado: ${vehicle.estado})`);
 
     // 2. Validar que el conductor esté activo
     const driver = await tx.driver.findUnique({
@@ -22,28 +22,37 @@ export const createTrip = async (tripData, userId) => {
 
     if (!driver || !driver.activo) throw new Error('Conductor no encontrado o inactivo');
 
-    // 3. Obtener tarifa para el tipo de viaje
-    const tariff = await tx.rateTariff.findUnique({
-      where: { tipoViaje: tripData.tipoViaje }
-    });
+    // 3. Calcular o asignar valor del pago
+    let valorPago = 0;
+    if (tripData.producto === 'FRUTO') {
+      const tariff = await tx.rateTariff.findUnique({
+        where: { producto: 'FRUTO' }
+      });
+      if (!tariff || !tariff.activo) throw new Error('No se encontró una tarifa activa configurada para FRUTO');
+      
+      // valorPago = toneladas * 1000 kg/ton * valor por kg
+      valorPago = Number(tripData.tonelaje) * 1000 * Number(tariff.valorKg);
+    } else if (tripData.producto === 'COMPOST') {
+      if (tripData.valorPago === undefined || tripData.valorPago === null) {
+        throw new Error('El valor del pago es obligatorio para el producto COMPOST');
+      }
+      valorPago = Number(tripData.valorPago);
+    } else {
+      throw new Error(`Producto no válido: ${tripData.producto}`);
+    }
 
-    if (!tariff) throw new Error(`No se encontró una tarifa configurada para viajes de tipo ${tripData.tipoViaje}`);
-
-    // 4. Calcular valor del pago
-    const valorPago = Number(tripData.tonelaje) * Number(tariff.valorTon);
-
-    // 5. Crear el viaje
+    // 4. Crear el viaje
     const newTrip = await tx.trip.create({
       data: {
-        ticket: tripData.ticket,
-        fecha: new Date(tripData.fecha), // Conversión explícita a objeto Date
+        ticket: Number(tripData.ticket),
+        fecha: new Date(tripData.fecha),
         origen: tripData.origen,
-        tipoViaje: tripData.tipoViaje,
-        tipoPago: tripData.tipoPago,
+        producto: tripData.producto,
+        tipoPago: tripData.tipoPago || 'TRANSFERENCIA',
         tonelaje: tripData.tonelaje,
         valorPago: valorPago,
         consumoAcpm: tripData.consumoAcpm,
-        usoFerry: tripData.usoFerry,
+        usoFerry: tripData.usoFerry || false,
         driverId: tripData.driverId,
         vehicleId: tripData.vehicleId,
         registradoPorId: userId
@@ -54,13 +63,7 @@ export const createTrip = async (tripData, userId) => {
       }
     });
 
-    // 6. Actualizar estado del vehículo a EN_VIAJE
-    await tx.vehicle.update({
-      where: { id: tripData.vehicleId },
-      data: { estado: 'EN_VIAJE' }
-    });
-
-    // 7. Registrar Auditoría
+    // 5. Registrar Auditoría
     await auditService.logAudit({
       userId,
       action: 'CREATE',
@@ -111,7 +114,7 @@ export const getTripById = async (id) => {
 
 /**
  * Actualiza un viaje existente con registro de auditoría.
- * Gestiona el re-cálculo de pagos y cambio de vehículos si es necesario.
+ * Re-calcula el pago o recibe el valor manual si es compost.
  */
 export const updateTrip = async (id, updateData, userId) => {
   return await prisma.$transaction(async (tx) => {
@@ -129,47 +132,37 @@ export const updateTrip = async (id, updateData, userId) => {
       dataToUpdate.fecha = new Date(updateData.fecha);
     }
 
-    // 2. Si cambia el vehículo, gestionar estados
-    if (updateData.vehicleId && updateData.vehicleId !== oldTrip.vehicleId) {
-      // Validar nuevo vehículo
-      const newVehicle = await tx.vehicle.findUnique({ where: { id: updateData.vehicleId } });
-      if (!newVehicle || !newVehicle.activo) throw new Error('Nuevo vehículo no encontrado o inactivo');
-      if (newVehicle.estado !== 'DISPONIBLE') throw new Error(`El vehículo ${newVehicle.placa} no está disponible`);
-
-      // Liberar vehículo anterior
-      await tx.vehicle.update({
-        where: { id: oldTrip.vehicleId },
-        data: { estado: 'DISPONIBLE' }
-      });
-
-      // Ocupar nuevo vehículo
-      await tx.vehicle.update({
-        where: { id: updateData.vehicleId },
-        data: { estado: 'EN_VIAJE' }
-      });
+    // Asegurar ticket numérico
+    if (updateData.ticket !== undefined) {
+      dataToUpdate.ticket = Number(updateData.ticket);
     }
 
-    // 3. Si cambia tonelaje o tipo de viaje, re-calcular pago
-    if (updateData.tonelaje || updateData.tipoViaje) {
-      const tonelaje = updateData.tonelaje || oldTrip.tonelaje;
-      const tipoViaje = updateData.tipoViaje || oldTrip.tipoViaje;
+    // 2. Si cambia tonelaje, producto o valorPago, gestionar re-cálculos
+    const producto = updateData.producto || oldTrip.producto;
+    const tonelaje = updateData.tonelaje !== undefined ? updateData.tonelaje : oldTrip.tonelaje;
 
+    if (producto === 'FRUTO') {
       const tariff = await tx.rateTariff.findUnique({
-        where: { tipoViaje }
+        where: { producto: 'FRUTO' }
       });
-      if (!tariff) throw new Error(`No hay tarifa configurada para viajes ${tipoViaje}`);
-
-      dataToUpdate.valorPago = Number(tonelaje) * Number(tariff.valorTon);
+      if (!tariff || !tariff.activo) throw new Error('No se encontró una tarifa activa para FRUTO');
+      dataToUpdate.valorPago = Number(tonelaje) * 1000 * Number(tariff.valorKg);
+    } else if (producto === 'COMPOST') {
+      if (updateData.valorPago !== undefined && updateData.valorPago !== null) {
+        dataToUpdate.valorPago = Number(updateData.valorPago);
+      } else if (oldTrip.producto !== 'COMPOST') {
+        throw new Error('Debe especificar el valor del pago para el producto COMPOST');
+      }
     }
 
-    // 4. Ejecutar actualización
+    // 3. Ejecutar actualización
     const updatedTrip = await tx.trip.update({
       where: { id },
       data: dataToUpdate,
       include: { driver: true, vehicle: true }
     });
 
-    // 5. Registrar Auditoría
+    // 4. Registrar Auditoría
     await auditService.logAudit({
       userId,
       action: 'UPDATE',
@@ -185,7 +178,7 @@ export const updateTrip = async (id, updateData, userId) => {
 };
 
 /**
- * Realiza un Soft Delete del viaje y libera el vehículo.
+ * Realiza un Soft Delete del viaje.
  */
 export const deleteTrip = async (id, userId) => {
   return await prisma.$transaction(async (tx) => {
@@ -200,12 +193,6 @@ export const deleteTrip = async (id, userId) => {
       }
     });
 
-    // Liberar vehículo si estaba en viaje
-    await tx.vehicle.update({
-      where: { id: oldTrip.vehicleId },
-      data: { estado: 'DISPONIBLE' }
-    });
-
     await auditService.logAudit({
       userId,
       action: 'DELETE',
@@ -215,7 +202,7 @@ export const deleteTrip = async (id, userId) => {
       newValues: { deletedAt: deletedTrip.deletedAt }
     }, tx);
 
-    console.log(`🗑️ Viaje ${oldTrip.ticket} eliminado. Vehículo liberado.`);
+    console.log(`🗑️ Viaje ${oldTrip.ticket} eliminado.`);
     return deletedTrip;
   });
 };
