@@ -5,7 +5,7 @@ Bienvenido al directorio central de documentación de **Novapalma**. Aquí encon
 
 ### 📖 Contenido Disponible:
 
-1.  👉 **[Documentación Técnica General (TECHNICAL_DOCUMENTATION.md)](./TECHNICAL_DOCUMENTATION.md)**
+1.  👉 **[Documentación Técnica General (DOCUMENTATION.md)](./DOCUMENTATION.md)**
     *   Detalle profundo de la **Arquitectura MVC Potenciada** (Rutas -> Controladores -> Capa de Servicios).
     *   Integración del ORM Prisma 7 y PostgreSQL.
     *   Mecanismo de **Auditoría Forense Inmutable** (`audit_logs` con snapshots before/after).
@@ -20,7 +20,7 @@ Bienvenido al directorio central de documentación de **Novapalma**. Aquí encon
 
 3.  👉 **[Guía de Pruebas y Control de Calidad (TESTING_GUIDE.md)](./TESTING_GUIDE.md)**
     *   Instrucciones para correr la suite de pruebas de extremo a extremo (E2E) con **Selenium WebDriver**.
-    *   Detalle técnico de los scripts de firewall de datos y validaciones de Zod (`test-validation.sh` y `test-vehicles.sh`).
+    *   Detalle técnico de los scripts de firewall de datos y validaciones de Zod (`tests/test-validation.sh` y `tests/test-vehicles.sh`).
     *   Estrategias de resiliencia y tolerancia a fallos ante microdesconexiones del motor relacional.
 
 4.  👉 **[Guía de Instalación y Despliegue General (README.md Principal)](../README.md)**

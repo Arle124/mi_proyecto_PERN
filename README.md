@@ -97,21 +97,4 @@ cd client
 npm run dev
 ```
 
----
 
-## 🧪 Pruebas de Calidad E2E (Selenium)
-
-El sistema incluye un script automatizado para pruebas de estrés, integridad y verificación de salud en el entorno de desarrollo y pipelines de CI/CD.
-
-Para ejecutar las pruebas E2E (asegúrate de que los contenedores o servicios locales estén arriba):
-```bash
-cd server
-node test-quality.js
-```
-
-El script validará automáticamente la autenticación, la inyección del Pool PG, el tiempo de respuesta del servidor y la carga correcta de métricas desde la base de datos.
-
-## 📖 Referencia Técnica
-Para detalles profundos sobre la arquitectura MVC Potenciada, el diseño de la base de datos y los estándares de ingeniería aplicados, consulte la documentación principal:
-
-*Desarrollado como proyecto de Ingeniería de Software - Novapalma Logística.*

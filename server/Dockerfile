@@ -19,5 +19,5 @@ COPY . .
 
 EXPOSE 3001
 
-# Script to wait for DB and run migrations
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Script to wait for DB and sync schema
+CMD ["sh", "-c", "npx prisma db push && npm start"]

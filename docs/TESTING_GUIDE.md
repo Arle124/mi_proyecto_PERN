@@ -33,7 +33,7 @@ node test-quality.js
 
 Para garantizar la integridad y sanitización de los datos enviados a la base de datos (evitando SQL Injection, payloads excesivamente grandes y desbordamiento de tipos), el sistema implementa validaciones estrictas en el nivel del router a través de **Zod**.
 
-*   **Script de Validación:** `test-validation.sh` (en la raíz del proyecto).
+*   **Script de Validación:** `tests/test-validation.sh`
 *   **Formato:** Shell Script + peticiones `curl`.
 *   **Módulo Evaluado:** `/api/viajes` (Registro de Viajes) y `/api/vehiculos` (Gestión de Flota).
 
@@ -44,8 +44,8 @@ El script realiza peticiones deliberadamente erróneas al servidor local backend
 
 #### Ejecución:
 ```bash
-chmod +x test-validation.sh
-./test-validation.sh
+chmod +x tests/test-validation.sh
+./tests/test-validation.sh
 ```
 
 ---
@@ -54,13 +54,13 @@ chmod +x test-validation.sh
 
 Para validar el flujo normalizado de registro de vehículos con placa reglamentaria y validaciones de Zod.
 
-*   **Archivo:** `test-vehicles.sh`
+*   **Archivo:** `tests/test-vehicles.sh`
 *   **Propósito:** Probar la creación exitosa y fallida de vehículos directamente sobre el endpoint `/api/vehiculos`.
 
 #### Ejecución:
 ```bash
-chmod +x test-vehicles.sh
-./test-vehicles.sh
+chmod +x tests/test-vehicles.sh
+./tests/test-vehicles.sh
 ```
 
 ---
