@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -7,40 +8,69 @@ import Trips from './pages/Trips';
 import Vehicles from './pages/Vehicles';
 import Drivers from './pages/Drivers';
 import Tariffs from './pages/Tariffs';
+import Users from './pages/Users';
+import Finance from './pages/Finance';
+import api from './api/axios';
 
-// Componentes Placeholder para otros módulos (MVP Vertical Slice)
-const Users = () => <div><h4>Módulo de Usuarios</h4><p>Panel de Administración de Personal.</p></div>;
-const Dashboard = () => (
-  <div className="row g-4">
-    <div className="col-md-3">
-      <div className="card p-3 text-center">
-        <h2 className="fw-bold text-primary">12</h2>
-        <p className="text-muted small m-0">Viajes este mes</p>
+const Dashboard = () => {
+  const [stats, setStats] = useState({
+    tripsThisMonth: 0,
+    activeVehicles: 0,
+    activeDrivers: 0,
+    totalBilling: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get('/dashboard/stats');
+        setStats(data);
+      } catch (error) {
+        console.error('Error al cargar métricas del Dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  return (
+    <div className="row g-4">
+      <div className="col-md-3">
+        <div className="card p-3 text-center border-0 shadow-sm bg-white">
+          <h2 className="fw-bold text-primary mb-1">{loading ? '...' : stats.tripsThisMonth}</h2>
+          <p className="text-muted small m-0 fw-medium">Viajes este mes</p>
+        </div>
+      </div>
+      <div className="col-md-3">
+        <div className="card p-3 text-center border-0 shadow-sm bg-white">
+          <h2 className="fw-bold text-success mb-1">{loading ? '...' : stats.activeVehicles}</h2>
+          <p className="text-muted small m-0 fw-medium">Flota Activa</p>
+        </div>
+      </div>
+      <div className="col-md-3">
+        <div className="card p-3 text-center border-0 shadow-sm bg-white">
+          <h2 className="fw-bold text-info mb-1">{loading ? '...' : stats.activeDrivers}</h2>
+          <p className="text-muted small m-0 fw-medium">Conductores Activos</p>
+        </div>
+      </div>
+      <div className="col-md-3">
+        <div className="card p-3 text-center border-0 shadow-sm bg-white">
+          <h2 className="fw-bold text-warning mb-1">
+            {loading ? '...' : `$${Number(stats.totalBilling).toLocaleString()}`}
+          </h2>
+          <p className="text-muted small m-0 fw-medium">Facturación Mensual</p>
+        </div>
+      </div>
+      <div className="col-12 mt-4">
+        <div className="card p-4 border-0 shadow-sm bg-white">
+          <Trips isDashboard={true} />
+        </div>
       </div>
     </div>
-    <div className="col-md-3">
-      <div className="card p-3 text-center">
-        <h2 className="fw-bold text-success">85%</h2>
-        <p className="text-muted small m-0">Flota Activa</p>
-      </div>
-    </div>
-    <div className="col-md-3">
-      <div className="card p-3 text-center">
-        <h2 className="fw-bold text-info">24</h2>
-        <p className="text-muted small m-0">Conductores</p>
-      </div>
-    </div>
-    <div className="col-md-3">
-      <div className="card p-3 text-center">
-        <h2 className="fw-bold text-warning">$2.4M</h2>
-        <p className="text-muted small m-0">Facturación</p>
-      </div>
-    </div>
-    <div className="col-12">
-      <Trips />
-    </div>
-  </div>
-);
+  );
+};
 
 function App() {
   return (
@@ -98,6 +128,14 @@ function App() {
             element={
               <AdminRoute>
                 <Layout><Tariffs /></Layout>
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/finanzas" 
+            element={
+              <AdminRoute>
+                <Layout><Finance /></Layout>
               </AdminRoute>
             } 
           />

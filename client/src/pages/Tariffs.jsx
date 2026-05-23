@@ -24,10 +24,10 @@ const Tariffs = () => {
     }
   };
 
-  const handleUpdate = async (tipoViaje, valorTon) => {
+  const handleUpdate = async (producto, valorKg) => {
     try {
-      await api.post('/tarifas', { tipoViaje, valorTon: parseFloat(valorTon) });
-      setMessage({ type: 'success', text: `Tarifa ${tipoViaje} actualizada correctamente.` });
+      await api.post('/tarifas', { producto, valorKg: parseFloat(valorKg) });
+      setMessage({ type: 'success', text: `Tarifa del producto ${producto} actualizada correctamente.` });
       fetchTariffs();
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
@@ -52,49 +52,54 @@ const Tariffs = () => {
       )}
 
       <div className="row g-4">
-        {tariffs.map((t) => (
-          <div key={t.id} className="col-md-6">
-            <div className="card h-100 shadow-sm border-0">
-              <div className="card-body p-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <span className={`badge ${t.tipoViaje === 'NORMAL' ? 'bg-success' : 'bg-primary'} px-3 py-2`}>
-                    VIAJE {t.tipoViaje}
-                  </span>
-                  <small className="text-muted">Última actualización: {new Date(t.updatedAt).toLocaleDateString()}</small>
+        {loading ? (
+          <div className="col-12 text-center py-5 text-muted">Cargando tarifas...</div>
+        ) : tariffs.length === 0 ? (
+          <div className="col-12 text-center py-5 text-muted">No hay tarifas de cálculo automático configuradas.</div>
+        ) : (
+          tariffs.map((t) => (
+            <div key={t.id} className="col-md-6">
+              <div className="card h-100 shadow-sm border-0 bg-white">
+                <div className="card-body p-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <span className="badge bg-success px-3 py-2 rounded-pill">
+                      PRODUCTO {t.producto}
+                    </span>
+                    <small className="text-muted">Actualización: {new Date(t.updatedAt).toLocaleDateString()}</small>
+                  </div>
+                  
+                  <h5 className="card-title text-muted mb-4">Valor por Kilogramo (COP)</h5>
+                  
+                  <div className="input-group input-group-lg mb-3">
+                    <span className="input-group-text bg-light border-0">$</span>
+                    <input
+                      type="number"
+                      className="form-control bg-light border-0 fw-bold"
+                      defaultValue={t.valorKg}
+                      id={`input-tariff-${t.id}`}
+                      onBlur={(e) => handleUpdate(t.producto, e.target.value)}
+                    />
+                  </div>
+                  
+                  <p className="small text-muted mb-0">
+                    * El cobro de fruta se calcula automáticamente multiplicando el tonelaje por 1000 kg y luego por este valor.
+                  </p>
                 </div>
-                
-                <h5 className="card-title text-muted mb-4">Valor por Tonelada (COP)</h5>
-                
-                <div className="input-group input-group-lg mb-3">
-                  <span className="input-group-text bg-light border-0">$</span>
-                  <input
-                    type="number"
-                    className="form-control bg-light border-0 fw-bold"
-                    defaultValue={t.valorTon}
-                    onBlur={(e) => handleUpdate(t.tipoViaje, e.target.value)}
-                  />
+                <div className="card-footer bg-transparent border-0 p-4 pt-0">
+                  <button 
+                    className="btn btn-primary w-100 d-flex align-items-center justify-content-center"
+                    onClick={() => {
+                      const input = document.getElementById(`input-tariff-${t.id}`);
+                      handleUpdate(t.producto, input.value);
+                    }}
+                  >
+                    <Save size={18} className="me-2" /> Guardar Cambios
+                  </button>
                 </div>
-                
-                <p className="small text-muted mb-0">
-                  {t.tipoViaje === 'NORMAL' 
-                    ? '* Basado en $25 COP por Kilogramo de fruta.' 
-                    : '* Tarifa base fija para servicios especiales.'}
-                </p>
-              </div>
-              <div className="card-footer bg-transparent border-0 p-4 pt-0">
-                <button 
-                  className="btn btn-primary w-100 d-flex align-items-center justify-content-center"
-                  onClick={() => {
-                    const input = document.querySelector(`input[defaultValue="${t.valorTon}"]`);
-                    handleUpdate(t.tipoViaje, input.value);
-                  }}
-                >
-                  <Save size={18} className="me-2" /> Guardar Cambios
-                </button>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,8 @@ import {
   LogOut, 
   LayoutDashboard, 
   UserCircle,
-  Banknote
+  Banknote,
+  DollarSign
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -48,6 +49,9 @@ const Layout = ({ children }) => {
               </NavLink>
               <NavLink to="/tarifas" className="nav-link">
                 <Banknote size={20} /> Tarifas
+              </NavLink>
+              <NavLink to="/finanzas" className="nav-link">
+                <DollarSign size={20} /> Finanzas
               </NavLink>
             </>
           )}
