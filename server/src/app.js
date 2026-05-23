@@ -26,9 +26,10 @@ app.use(cors({
 
 // 3. RATE LIMITING: Defensa contra ataques de denegación de servicio (DoS) 
 // y fuerza bruta en endpoints sensibles.
+app.set('trust proxy', 1); // Permite leer la IP correcta detrás de proxies (Docker/Nginx)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // Ventana de 15 minutos
-  max: 100, // Límite de 100 peticiones por IP por ventana
+  max: process.env.NODE_ENV === 'production' ? 100 : 2000, // 2000 peticiones en desarrollo para evitar bloqueos por refrescos/HMR
   message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.',
   standardHeaders: true,
   legacyHeaders: false,
