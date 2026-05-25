@@ -72,7 +72,8 @@ const Users = () => {
       fetchUsers();
     } catch (err) {
       console.error('Error toggling user status:', err);
-      alert('No se pudo cambiar el estado del usuario');
+      const errMsg = err.response?.data?.error || 'No se pudo cambiar el estado del usuario';
+      alert(errMsg);
     }
   };
 
@@ -82,7 +83,8 @@ const Users = () => {
       fetchUsers();
     } catch (err) {
       console.error('Error changing user role:', err);
-      alert('No se pudo cambiar el rol del usuario');
+      const errMsg = err.response?.data?.error || 'No se pudo cambiar el rol del usuario';
+      alert(errMsg);
     }
   };
 

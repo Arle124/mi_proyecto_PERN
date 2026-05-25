@@ -21,6 +21,18 @@ export const getAllUsers = async () => {
 };
 
 export const createUser = async (userData, creatorId = null) => {
+  if (!creatorId) {
+    throw new Error('Operación denegada: Se requiere la identificación del creador.');
+  }
+
+  // Verificar que el creador sea un administrador activo en la base de datos
+  const actor = await prisma.user.findFirst({
+    where: { id: creatorId, activo: true, deletedAt: null }
+  });
+  if (!actor || actor.rol !== 'ADMIN') {
+    throw new Error('Operación denegada: Se requieren privilegios de administrador activos para registrar nuevos usuarios.');
+  }
+
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
 
@@ -60,6 +72,18 @@ export const createUser = async (userData, creatorId = null) => {
 };
 
 export const updateUser = async (id, updateData, adminId) => {
+  if (!adminId) {
+    throw new Error('Operación denegada: Se requiere la identificación del administrador.');
+  }
+
+  // Verificar que el actor sea un administrador activo en la base de datos
+  const actor = await prisma.user.findFirst({
+    where: { id: adminId, activo: true, deletedAt: null }
+  });
+  if (!actor || actor.rol !== 'ADMIN') {
+    throw new Error('Operación denegada: Se requieren privilegios de administrador activos para modificar usuarios.');
+  }
+
   // Blindaje de Seguridad: Previene el auto-bloqueo del administrador activo
   if (id === adminId) {
     if (updateData.activo === false) {
@@ -83,6 +107,22 @@ export const updateUser = async (id, updateData, adminId) => {
       where: { id }
     });
     if (!oldUser) throw new Error('Usuario no encontrado');
+
+    // Blindaje de seguridad adicional: Si el usuario a modificar es ADMIN,
+    // y se le intenta desactivar o degradar, verificar cuántos administradores activos quedan.
+    if (oldUser.rol === 'ADMIN' && (updateData.activo === false || updateData.rol === 'OPERADOR')) {
+      const activeAdminsCount = await tx.user.count({
+        where: {
+          rol: 'ADMIN',
+          activo: true,
+          deletedAt: null
+        }
+      });
+
+      if (activeAdminsCount <= 1) {
+        throw new Error('Operación denegada: No se puede desactivar o degradar al único administrador activo en el sistema.');
+      }
+    }
 
     // 2. Ejecutar la actualización
     const updatedUser = await tx.user.update({

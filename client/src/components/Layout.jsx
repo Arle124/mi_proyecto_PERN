@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -8,12 +9,24 @@ import {
   LayoutDashboard, 
   UserCircle,
   Banknote,
-  DollarSign
+  DollarSign,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   const handleLogout = () => {
     logout();
@@ -80,8 +93,18 @@ const Layout = ({ children }) => {
       <main className="flex-grow-1 p-4 bg-light overflow-auto vh-100">
         <header className="mb-4 d-flex justify-content-between align-items-center">
           <h2 className="fw-bold m-0 text-primary">Sistema Logístico</h2>
-          <div className="bg-white px-3 py-1 rounded-pill shadow-sm small border">
-            Estado: <span className="text-success fw-bold">Conectado</span>
+          <div className="d-flex align-items-center gap-2">
+            <button 
+              onClick={toggleTheme} 
+              className="theme-toggle-btn border rounded-circle p-2 d-flex align-items-center justify-content-center bg-white shadow-sm"
+              title={theme === 'light' ? 'Activar Modo Oscuro' : 'Activar Modo Claro'}
+              style={{ width: '40px', height: '40px' }}
+            >
+              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} className="text-warning" />}
+            </button>
+            <div className="bg-white px-3 py-1 rounded-pill shadow-sm small border" style={{ height: '40px', display: 'flex', alignItems: 'center' }}>
+              Estado: <span className="text-success fw-bold ms-1">Conectado</span>
+            </div>
           </div>
         </header>
         {children}
@@ -91,3 +114,4 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
+
