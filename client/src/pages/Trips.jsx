@@ -63,10 +63,43 @@ const Trips = ({ isDashboard = false }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    if (name === 'ticket') {
+      // Solo permite números positivos, eliminando guiones, espacios y cualquier letra o carácter especial
+      const positiveInteger = value.replace(/\D/g, '');
+      setFormData({
+        ...formData,
+        ticket: positiveInteger
+      });
+      return;
+    }
+    
+    if (name === 'tonelaje' || name === 'consumoAcpm' || name === 'valorPago') {
+      // Elimina cualquier signo negativo y caracteres raros (permitiendo números y punto decimal)
+      let cleanedValue = value.replace(/-/g, '');
+      
+      if (cleanedValue !== '' && parseFloat(cleanedValue) < 0) {
+        cleanedValue = '0';
+      }
+      
+      setFormData({
+        ...formData,
+        [name]: cleanedValue
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
+  };
+
+  // Bloquea signos negativos, signos positivos y notación científica en inputs de número
+  const handleKeyDownPositive = (e) => {
+    if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+    }
   };
 
   // Cálculo del valor del pago en vivo
@@ -143,54 +176,56 @@ const Trips = ({ isDashboard = false }) => {
       </div>
 
       {/* Tabla de Viajes */}
-      <div className="table-responsive">
-        <table className="table table-hover align-middle mb-0">
-          <thead className="bg-light">
-            <tr>
-              <th className="px-4 py-3 text-secondary small text-uppercase fw-bold">Ticket</th>
-              <th className="py-3 text-secondary small text-uppercase fw-bold">Fecha</th>
-              <th className="py-3 text-secondary small text-uppercase fw-bold">Conductor</th>
-              <th className="py-3 text-secondary small text-uppercase fw-bold">Vehículo</th>
-              <th className="py-3 text-secondary small text-uppercase fw-bold">Producto</th>
-              <th className="py-3 text-secondary small text-uppercase fw-bold">Tonelaje</th>
-              <th className="py-3 text-secondary small text-uppercase fw-bold">Valor Pago</th>
-              <th className="py-3 text-secondary small text-uppercase fw-bold">Registrado Por</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      <div className="card border-0 shadow-sm">
+        <div className="table-responsive">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="bg-light">
               <tr>
-                <td colSpan="8" className="text-center py-5">
-                  <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                  Cargando viajes registrados...
-                </td>
+                <th className="px-4 py-3 text-secondary small text-uppercase fw-bold">Ticket</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Fecha</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Conductor</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Vehículo</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Producto</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Tonelaje</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Valor Pago</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Registrado Por</th>
               </tr>
-            ) : trips.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="text-center py-5 text-muted">No se encontraron registros de viajes.</td>
-              </tr>
-            ) : (
-              trips.map((trip) => (
-                <tr key={trip.id}>
-                  <td className="px-4 fw-bold text-primary">#{trip.ticket}</td>
-                  <td>{new Date(trip.fecha).toLocaleDateString()}</td>
-                  <td>{trip.driver?.primerNombre} {trip.driver?.primerApellido}</td>
-                  <td><span className="badge bg-light text-dark border">{trip.vehicle?.placa}</span></td>
-                  <td>
-                    <span className={`badge px-3 py-1.5 rounded-pill ${trip.producto === 'FRUTO' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'}`}>
-                      {trip.producto}
-                    </span>
-                  </td>
-                  <td>{trip.tonelaje} Ton</td>
-                  <td className="fw-bold">${Number(trip.valorPago).toLocaleString()}</td>
-                  <td className="text-muted small">
-                    {trip.registradoPor?.primerNombre} {trip.registradoPor?.primerApellido}
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-5">
+                    <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    Cargando viajes registrados...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : trips.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-5 text-muted">No se encontraron registros de viajes.</td>
+                </tr>
+              ) : (
+                trips.map((trip) => (
+                  <tr key={trip.id}>
+                    <td className="px-4 fw-bold text-primary">#{trip.ticket}</td>
+                    <td>{new Date(trip.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
+                    <td>{trip.driver?.primerNombre} {trip.driver?.primerApellido}</td>
+                    <td><span className="badge bg-light text-dark border">{trip.vehicle?.placa}</span></td>
+                    <td>
+                      <span className={`badge px-3 py-1.5 rounded-pill ${trip.producto === 'FRUTO' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'}`}>
+                        {trip.producto}
+                      </span>
+                    </td>
+                    <td>{trip.tonelaje} Ton</td>
+                    <td className="fw-bold">${Number(trip.valorPago).toLocaleString()}</td>
+                    <td className="text-muted small">
+                      {trip.registradoPor?.primerNombre} {trip.registradoPor?.primerApellido}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal de Creación */}
@@ -216,7 +251,9 @@ const Trips = ({ isDashboard = false }) => {
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Número de Ticket *</label>
                       <input 
-                        type="number" 
+                        type="text" 
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         name="ticket" 
                         className="form-control" 
                         placeholder="Ej: 14529" 
@@ -282,11 +319,13 @@ const Trips = ({ isDashboard = false }) => {
                       </select>
                     </div>
 
-                    <div className="col-md-4">
+                     <div className="col-md-4">
                       <label className="form-label small fw-bold">Tonelaje Real *</label>
                       <input 
                         type="number" 
                         step="0.001" 
+                        min="0"
+                        onKeyDown={handleKeyDownPositive}
                         name="tonelaje" 
                         className="form-control" 
                         placeholder="Ej: 8.540" 
@@ -300,6 +339,8 @@ const Trips = ({ isDashboard = false }) => {
                       <input 
                         type="number" 
                         step="0.1" 
+                        min="0"
+                        onKeyDown={handleKeyDownPositive}
                         name="consumoAcpm" 
                         className="form-control" 
                         value={formData.consumoAcpm} 
@@ -347,6 +388,8 @@ const Trips = ({ isDashboard = false }) => {
                               <span className="input-group-text">$</span>
                               <input 
                                 type="number" 
+                                min="0"
+                                onKeyDown={handleKeyDownPositive}
                                 name="valorPago" 
                                 className="form-control fw-bold text-end" 
                                 placeholder="Ej: 450000" 
