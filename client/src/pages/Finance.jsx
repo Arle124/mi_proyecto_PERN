@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { DollarSign, Filter, Download, Printer, Table, Calendar, AlertCircle } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const Finance = () => {
   const { isAdmin } = useAuth();
@@ -63,49 +64,40 @@ const Finance = () => {
       return;
     }
 
-    // Build CSV Content
-    const headers = [
-      'Ticket',
-      'Fecha',
-      'Conductor',
-      'Cedula',
-      'Vehiculo',
-      'Origen',
-      'Producto',
-      'Tonelaje (Tons)',
-      'Consumo ACPM (Gal)',
-      'Ferry Usado',
-      'Valor Pago (COP)'
-    ];
+    // Format data for genuine Excel download
+    const formattedData = trips.map(t => ({
+      'Ticket': `#${t.ticket}`,
+      'Fecha': new Date(t.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' }),
+      'Conductor': `${t.driver?.primerNombre} ${t.driver?.primerApellido}`,
+      'Cédula': t.driver?.cedula,
+      'Vehículo': t.vehicle?.placa,
+      'Origen': t.origen,
+      'Producto': t.producto,
+      'Tonelaje (Tons)': Number(t.tonelaje),
+      'Consumo ACPM (Gal)': t.consumoAcpm ? Number(t.consumoAcpm) : 0,
+      'Ferry Usado': t.usoFerry ? 'SÍ' : 'NO',
+      'Valor Pago (COP)': Number(t.valorPago)
+    }));
 
-    const rows = trips.map(t => [
-      t.ticket,
-      new Date(t.fecha).toLocaleDateString(),
-      `${t.driver?.primerNombre} ${t.driver?.primerApellido}`,
-      `"${t.driver?.cedula}"`,
-      t.vehicle?.placa,
-      `"${t.origen}"`,
-      t.producto,
-      t.tonelaje,
-      t.consumoAcpm || 0,
-      t.usoFerry ? 'SI' : 'NO',
-      t.valorPago
-    ]);
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    
+    // Auto-fit columns for premium visual styling
+    const colWidths = Object.keys(formattedData[0] || {}).map(key => {
+      const maxLength = Math.max(
+        key.length,
+        ...formattedData.map(row => String(row[key] || '').length)
+      );
+      return { wch: maxLength + 2 };
+    });
+    worksheet['!cols'] = colWidths;
 
-    const csvContent = '\uFEFF' + [
-      headers.join(','),
-      ...rows.map(e => e.join(','))
-    ].join('\n');
+    // Create workbook and append sheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte Financiero');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `reporte_financiero_novapalma_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Trigger XLSX file download
+    XLSX.writeFile(workbook, `reporte_financiero_novapalma_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const triggerPrint = () => {
@@ -179,30 +171,30 @@ const Finance = () => {
       <div className="row g-4 mb-4">
         <div className="col-md-3">
           <div className="card p-3 border-0 shadow-sm bg-primary text-white">
-            <small className="opacity-75 text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Ingresos Totales (Facturación)</small>
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Ingresos Totales (Facturación)</small>
             <h3 className="fw-bold mt-1 mb-0">${Number(stats.totalBilling).toLocaleString()}</h3>
-            <span className="small opacity-50 mt-1 d-inline-block">COP consolidado</span>
+            <span className="small opacity-90 mt-1 d-inline-block">COP consolidado</span>
           </div>
         </div>
         <div className="col-md-3">
           <div className="card p-3 border-0 shadow-sm bg-success text-white">
-            <small className="opacity-75 text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Carga Total Transportada</small>
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Carga Total Transportada</small>
             <h3 className="fw-bold mt-1 mb-0">{Number(stats.totalTons).toFixed(2)} Ton</h3>
-            <span className="small opacity-50 mt-1 d-inline-block">Peso total registrado</span>
+            <span className="small opacity-90 mt-1 d-inline-block">Peso total registrado</span>
           </div>
         </div>
         <div className="col-md-3">
           <div className="card p-3 border-0 shadow-sm bg-info text-white">
-            <small className="opacity-75 text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Combustible ACPM Consumido</small>
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Combustible ACPM Consumido</small>
             <h3 className="fw-bold mt-1 mb-0">{Number(stats.totalAcpm).toFixed(1)} Gal</h3>
-            <span className="small opacity-50 mt-1 d-inline-block">Consumo total estimado</span>
+            <span className="small opacity-90 mt-1 d-inline-block">Consumo total estimado</span>
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card p-3 border-0 shadow-sm bg-warning text-dark">
-            <small className="opacity-75 text-uppercase fw-semibold" style={{ fontSize: '10px' }}>Cruces de Ferry</small>
+          <div className="card p-3 border-0 shadow-sm bg-warning text-white">
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Cruces de Ferry</small>
             <h3 className="fw-bold mt-1 mb-0">{stats.totalFerryCrossings}</h3>
-            <span className="small opacity-50 mt-1 d-inline-block">Tránsitos fluviales</span>
+            <span className="small opacity-90 mt-1 d-inline-block">Tránsitos fluviales</span>
           </div>
         </div>
       </div>
@@ -258,7 +250,7 @@ const Finance = () => {
                 trips.map((t) => (
                   <tr key={t.id}>
                     <td className="px-4 fw-bold text-primary">#{t.ticket}</td>
-                    <td>{new Date(t.fecha).toLocaleDateString()}</td>
+                    <td>{new Date(t.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
                     <td className="fw-medium">{t.driver?.primerNombre} {t.driver?.primerApellido}</td>
                     <td><span className="badge bg-light text-dark border">{t.vehicle?.placa}</span></td>
                     <td>
