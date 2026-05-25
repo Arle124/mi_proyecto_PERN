@@ -182,3 +182,35 @@ Para proteger la infraestructura contra ataques de denegación de servicio (DoS)
 ### 13. Cultura DevOps: Comentarios de Código Senior
 
 Siguiendo las mejores prácticas de ingeniería, el código fuente ha sido enriquecido con comentarios de estilo **DevOps Senior**. Estos comentarios no solo explican *qué* hace el código, sino el *por qué* de cada decisión técnica, facilitando la comprensión de la infraestructura para futuros auditores y desarrolladores.
+
+---
+
+### 14. Mejoras de UI, UX y Accesibilidad (Modo Oscuro, Validación y Zonas Horarias)
+
+Como parte de la optimización del frontend y del refinamiento de la experiencia de usuario (UX) para los despachadores, se han integrado mejoras clave que solucionan problemas de contraste en modo oscuro, validaciones en formularios y consistencia de datos temporales.
+
+#### 14.1. Validación Estricta de Campos y Eliminación de Flechas en Ticket (RF-Viajes-01)
+- **Problemática:** El input del número de ticket permitía valores negativos o caracteres extraños mediante pegado o teclado, y las flechas de incremento nativas (`spin buttons`) eran molestas y obsoletas para cifras de tickets grandes.
+- **Solución:**
+  - Se modificó el input de ticket a un tipo texto optimizado para entrada de números (`type="text" inputMode="numeric" pattern="[0-9]*"`). Esto elimina de raíz las flechas incrementales en cualquier navegador y despliega el teclado numérico de forma correcta en dispositivos móviles.
+  - Se integró un sanitizador por expresión regular en el manejador del formulario (`value.replace(/\D/g, '')`), que elimina en tiempo real cualquier guion (`-`), signo más (`+`), letras o caracteres especiales, garantizando que el campo reciba única y estrictamente números enteros positivos.
+
+#### 14.2. Validación de Límites Positivos en Inputs Numéricos
+- **Campos Afectados:** Tonelaje Real, Consumo ACPM y Valor Pactado (COMPOST).
+- **Solución:**
+  - Se mantuvieron los botones incrementales nativos, pero se les asignó la restricción `min="0"` a nivel de atributos HTML5, garantizando que el usuario no pueda decrementar por debajo de cero con el ratón.
+  - Se implementó un detector de teclado (`handleKeyDownPositive`) que bloquea las teclas `-`, `+`, `e` y `E` (utilizada para notación científica en inputs de tipo `number`), previniendo físicamente la inserción de números negativos por teclado.
+  - Adicionalmente, el controlador `handleInputChange` sanitiza las entradas al copiar y pegar, removiendo cualquier signo menos que se intente introducir.
+
+#### 14.3. Consistencia de Zonas Horarias en la Visualización de Fechas (Timezone Shift Fix)
+- **Problemática:** Las fechas de los viajes se persisten en base de datos en formato UTC (a las `00:00:00.000Z`). Debido a que el navegador realiza la conversión por defecto a la zona horaria del sistema cliente (ej. UTC-5, Colombia), una fecha guardada como `24/05/2026` UTC se convertía localmente a `23/05/2026 19:00`, lo que generaba un desfase visual de 1 día y causaba que se mostraran registros del día anterior al aplicar filtros para el día actual.
+- **Solución:**
+  - Se modificó el renderizado en la tabla y en la generación de archivos Excel en los módulos `Finance.jsx` y `Trips.jsx` utilizando la opción de zona horaria UTC: `toLocaleDateString(undefined, { timeZone: 'UTC' })`. Esto neutraliza por completo el desfase local y muestra la fecha calendaria exacta tal como fue guardada en el backend.
+
+#### 14.4. Accesibilidad y Contraste de Componentes en Modo Oscuro
+- **Mejora en Placeholders:** Se añadieron selectores globales en `index.css` (`[data-theme='dark'] ::placeholder`) para establecer un color lavanda claro y opacidad controlada (`#94a3b8` con `0.55` de opacidad), asegurando legibilidad en todos los campos de texto del tema oscuro.
+- **Mejora en Campos Deshabilitados (Tipo de Pago):** Los campos bloqueados como `tipoPago` (deshabilitado por reglas de la DIAN) presentaban texto blanco con fondo blanco. Se aplicó una regla global para `.form-control:disabled` y `.form-select:disabled` que les asigna un color gris-lavanda legible, fondo opaco `#1e293b` y el cursor estándar de no permitido (`not-allowed`), eliminando el problema de visibilidad.
+- **Mejora en Encabezados y Textos de Tablas:** Se sobrescribieron las clases `.text-secondary` (encabezados de tabla `<th>`) y `.text-primary` (para campos críticos como número de ticket o placa) en modo oscuro para forzar el uso de colores brillantes de alta visibilidad (`#94a3b8` y `#60a5fa` respectivamente), superando las restricciones de especificidad de Bootstrap 5.
+- **Mejora en Botones Primarios (`.btn-primary`):** Se evitó que el fondo de los botones primarios se fusionara con las tarjetas (`card`), cambiándolos a un azul eléctrico brillante (`#3b82f6`) con un sutil efecto de elevación y resplandor (`box-shadow`) al pasar el ratón.
+- **Iconos de Calendario Nativo (`type="date"`):** Se invirtieron los colores de los selectores de calendario nativo del navegador mediante `filter: invert(1) brightness(0.9) !important` en modo oscuro, transformando el icono negro por defecto en uno blanco nítido y de excelente contraste.
+
