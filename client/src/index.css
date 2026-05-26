@@ -350,5 +350,65 @@ body {
   opacity: 1 !important;
 }
 
+/* ============================================================
+   RESPONSIVE DESIGN SYSTEM (MEDIA QUERIES)
+   ============================================================ */
+
+@media (max-width: 991.98px) {
+  /* Menú Sidebar como panel flotante deslizable (Drawer) */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1050;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  /* Fondo oscuro semitransparente táctil (Backdrop) */
+  .sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 1040;
+    animation: fadeIn 0.2s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 575.98px) {
+  /* Ajuste de encabezados en celulares muy pequeños */
+  .page-title {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Reducción de tamaño del logo */
+  h4.m-0.fw-bold {
+    font-size: 1.15rem !important;
+  }
+  
+  /* Compactar tablas para evitar scrolls excesivos */
+  .table th, .table td {
+    padding: 10px 8px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+
 
 
