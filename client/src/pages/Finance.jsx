@@ -58,15 +58,23 @@ const Finance = () => {
     }, 50);
   };
 
+  /**
+   * EXPORTACIÓN DE REPORTES EN FORMATO EXCEL (.xlsx)
+   * - Procesa los datos filtrados en memoria de la grilla de finanzas.
+   * - Aplica la consistencia de zona horaria (UTC) para evitar desfase de 1 día en fechas.
+   * - Auto-ajusta el ancho de columnas (wchs) de forma dinámica para estética premium.
+   */
   const exportToExcel = () => {
     if (trips.length === 0) {
       alert('No hay datos para exportar');
       return;
     }
 
-    // Format data for genuine Excel download
+    // Formateo explícito de los registros para el reporte de auditoría
     const formattedData = trips.map(t => ({
       'Ticket': `#${t.ticket}`,
+      // Consistencia horaria crucial: se usa timeZone: 'UTC' para que no reste
+      // horas locales (Colombia/Ecuador UTC-5) y muestre el día calendario exacto guardado.
       'Fecha': new Date(t.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' }),
       'Conductor': `${t.driver?.primerNombre} ${t.driver?.primerApellido}`,
       'Cédula': t.driver?.cedula,
@@ -79,10 +87,10 @@ const Finance = () => {
       'Valor Pago (COP)': Number(t.valorPago)
     }));
 
-    // Create worksheet
+    // Conversión de JSON estructurado a hoja física de XLSX
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     
-    // Auto-fit columns for premium visual styling
+    // Auto-fit dinámico de columnas según longitud máxima del contenido de la columna + 2 padding
     const colWidths = Object.keys(formattedData[0] || {}).map(key => {
       const maxLength = Math.max(
         key.length,
@@ -92,14 +100,18 @@ const Finance = () => {
     });
     worksheet['!cols'] = colWidths;
 
-    // Create workbook and append sheet
+    // Crea el libro de trabajo (workbook) y añade la pestaña de reporte consolidado
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte Financiero');
 
-    // Trigger XLSX file download
+    // Dispara la descarga del reporte etiquetado con la marca temporal actual
     XLSX.writeFile(workbook, `reporte_financiero_novapalma_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  /**
+   * IMPRESIÓN Y EXPORTACIÓN A PDF NATIVA
+   * Utiliza las hojas de estilo del navegador para formato horizontal (Landscape)
+   */
   const triggerPrint = () => {
     window.print();
   };

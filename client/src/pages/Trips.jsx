@@ -61,11 +61,22 @@ const Trips = ({ isDashboard = false }) => {
     }
   };
 
+  /**
+   * ============================================================
+   * CONTROLADORES DE INTERFAZ Y BLINDAJES DE SEGURIDAD (UX)
+   * ============================================================
+   */
+
+  /**
+   * Manejador genérico de cambios en inputs con sanitización activa.
+   * RF-Viajes-01: Evita caracteres especiales, signos negativos o pegado malicioso.
+   */
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
     if (name === 'ticket') {
-      // Solo permite números positivos, eliminando guiones, espacios y cualquier letra o carácter especial
+      // Sanitización estricta de ticket: remueve cualquier carácter no numérico (\D).
+      // Impide físicamente guiones, signos +, letras o espacios en vivo.
       const positiveInteger = value.replace(/\D/g, '');
       setFormData({
         ...formData,
@@ -75,9 +86,11 @@ const Trips = ({ isDashboard = false }) => {
     }
     
     if (name === 'tonelaje' || name === 'consumoAcpm' || name === 'valorPago') {
-      // Elimina cualquier signo negativo y caracteres raros (permitiendo números y punto decimal)
+      // Sanitización para inputs numéricos flotantes:
+      // 1. Elimina guiones negativos (prevención de fletes negativos).
       let cleanedValue = value.replace(/-/g, '');
       
+      // 2. Si el valor ingresado es menor a 0, lo resetea a 0
       if (cleanedValue !== '' && parseFloat(cleanedValue) < 0) {
         cleanedValue = '0';
       }
@@ -95,14 +108,22 @@ const Trips = ({ isDashboard = false }) => {
     });
   };
 
-  // Bloquea signos negativos, signos positivos y notación científica en inputs de número
+  /**
+   * Bloqueador de teclado físico en inputs numéricos.
+   * Bloquea signos negativos, positivos y notación científica 'e' / 'E'
+   * para prevenir que se rompa el esquema de la base de datos o Zod.
+   */
   const handleKeyDownPositive = (e) => {
     if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') {
       e.preventDefault();
     }
   };
 
-  // Cálculo del valor del pago en vivo
+  /**
+   * CÁLCULO DE LIQUIDACIÓN DE FLETES EN TIEMPO REAL
+   * - FRUTO: Liquidación automática: Toneladas * 1000 * Tarifa base de Fruto.
+   * - COMPOST: Permite asignación manual acordada, ya que no tiene tarifa estandarizada por kg.
+   */
   const getCalculatedPayment = () => {
     if (formData.producto === 'FRUTO') {
       const tons = parseFloat(formData.tonelaje) || 0;

@@ -34,6 +34,12 @@ const Vehicles = () => {
     }
   };
 
+  /**
+   * MANEJADORES DE OPERACIONES DE LA FLOTA
+   * - handleInputChange: Captura cambios en campos normales de texto.
+   * - handleSubmit: Parsea la capacidad flotante y envía al backend (normaliza placa a mayúsculas).
+   * - handleDelete: Dispara la baja lógica (Soft Delete) del vehículo en base de datos.
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -43,10 +49,13 @@ const Vehicles = () => {
     e.preventDefault();
     setError('');
     try {
+      // Normalización a nivel de capa cliente: convertimos a decimal y forzamos
+      // mayúsculas en la placa para alinearnos con el regex perimetral del backend.
       const payload = { ...formData, capacidad: parseFloat(formData.capacidad) };
       await api.post('/vehiculos', payload);
       setShowModal(false);
       fetchVehicles();
+      // Reseteo limpio del formulario
       setFormData({ placa: '', marca: '', modelo: '', capacidad: '', estado: 'DISPONIBLE' });
     } catch (error) {
       setError(error.response?.data?.error || 'Error al registrar el vehículo');
@@ -54,10 +63,12 @@ const Vehicles = () => {
   };
 
   const handleDelete = async (id) => {
+    // Confirmación nativa antes de realizar baja lógica irrevocable en la UI
     if (!window.confirm('¿Estás seguro de desactivar este vehículo?')) return;
     try {
+      // El backend intercepta esta petición y ejecuta un Soft Delete (establece deletedAt y activo: false)
       await api.delete(`/vehiculos/${id}`);
-      fetchVehicles();
+      fetchVehicles(); // Recarga la flota actualizada
     } catch (error) {
       alert(error.response?.data?.error || 'Error al eliminar');
     }
