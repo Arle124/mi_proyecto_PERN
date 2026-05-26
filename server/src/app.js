@@ -26,7 +26,10 @@ app.use(cors({
 
 // 3. RATE LIMITING: Defensa contra ataques de denegación de servicio (DoS) 
 // y fuerza bruta en endpoints sensibles.
-app.set('trust proxy', 1); // Permite leer la IP correcta detrás de proxies (Docker/Nginx)
+// NOTA DEV: Configurar 'trust proxy' en true permite que Express lea correctamente el cliente
+// original detrás de múltiples balanceadores (ej. Cloudflare + Render Routing). Evita que el
+// rate limiter bloquee por error a toda la flota compartiendo la IP interna del balanceador.
+app.set('trust proxy', true); 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // Ventana de 15 minutos
   max: process.env.NODE_ENV === 'production' ? 100 : 2000, // 2000 peticiones en desarrollo para evitar bloqueos por refrescos/HMR

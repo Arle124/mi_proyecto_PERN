@@ -16,7 +16,11 @@ import * as authService from '../services/auth.service.js';
  */
 export const login = async (req, res) => {
   const { correo, password } = req.body;
-  const ipAddress = req.ip;
+  
+  // Extracción robusta de IP pública real detrás de balanceadores y proxies (Cloudflare/Render/Vercel)
+  // El primer elemento de la cabecera 'x-forwarded-for' siempre es la IP pública original del cliente.
+  const ipAddress = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket.remoteAddress;
+  
   const userAgent = req.get('User-Agent');
 
   try {
