@@ -1,7 +1,24 @@
 import * as tripService from '../services/trip.service.js';
 
+/**
+ * ============================================================
+ * CONTROLADOR DE VIAJES (TRIP CONTROLLER)
+ * ============================================================
+ * Capa de Orquestación HTTP. Extrae los parámetros de la petición
+ * y delega la ejecución transaccional a la capa de servicios.
+ * Mantiene el principio de responsabilidad única (Single Responsibility Principle).
+ */
+
+/**
+ * @route   POST /api/viajes
+ * @desc    Registra un nuevo flete de forma atómica en el sistema
+ * @access  Privado (ADMIN, OPERADOR)
+ * @trazabilidad Requiere ID del despachador autenticado inyectado por el middleware de autenticación
+ */
 export const create = async (req, res) => {
   try {
+    // Se delega al servicio pasando el body y el ID del usuario actual (req.user.id)
+    // para cumplir con la trazabilidad inmutable del registro de auditoría (registradoPorId)
     const trip = await tripService.createTrip(req.body, req.user.id);
     res.status(201).json(trip);
   } catch (error) {
@@ -9,6 +26,11 @@ export const create = async (req, res) => {
   }
 };
 
+/**
+ * @route   GET /api/viajes
+ * @desc    Obtiene el historial completo de viajes que no han sido borrados lógicamente
+ * @access  Privado (ADMIN, OPERADOR)
+ */
 export const getAll = async (req, res) => {
   try {
     const trips = await tripService.getAllTrips();
@@ -18,6 +40,11 @@ export const getAll = async (req, res) => {
   }
 };
 
+/**
+ * @route   GET /api/viajes/:id
+ * @desc    Obtiene el detalle técnico de un viaje específico
+ * @access  Privado (ADMIN, OPERADOR)
+ */
 export const getById = async (req, res) => {
   try {
     const trip = await tripService.getTripById(req.params.id);
@@ -28,6 +55,12 @@ export const getById = async (req, res) => {
   }
 };
 
+/**
+ * @route   PUT /api/viajes/:id
+ * @desc    Actualiza un flete existente y recalcula los valores del flete
+ * @access  Privado (ADMIN, OPERADOR)
+ * @trazabilidad Pasa el ID del usuario editor para loguear quién modificó el viaje (actualizadoPorId)
+ */
 export const update = async (req, res) => {
   try {
     const trip = await tripService.updateTrip(req.params.id, req.body, req.user.id);
@@ -37,6 +70,12 @@ export const update = async (req, res) => {
   }
 };
 
+/**
+ * @route   DELETE /api/viajes/:id
+ * @desc    Realiza una baja lógica (Soft Delete) del viaje y libera el vehículo
+ * @access  Privado (ADMIN)
+ * @trazabilidad Loguea la acción de eliminación marcando el deletedAt con el usuario actor
+ */
 export const remove = async (req, res) => {
   try {
     const trip = await tripService.deleteTrip(req.params.id, req.user.id);
@@ -45,3 +84,4 @@ export const remove = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+

@@ -1,15 +1,33 @@
 import { prisma } from '../config/db.js';
 
 /**
- * Registra una acción en el log de auditoría.
+ * ============================================================
+ * SERVICIO DE AUDITORÍA FORENSE INMUTABLE (AUDIT SERVICE)
+ * ============================================================
+ * Núcleo de la Trazabilidad del Sistema.
+ * Permite registrar bitácoras de mutación inmutables con snapshots JSON
+ * representativos de los cambios (antiguos y nuevos valores).
+ * Garantiza el No Repudio capturando la IP y el User-Agent.
+ */
+
+/**
+ * Registra una acción en la bitácora inmutable de auditoría.
+ * 
+ * @important Para garantizar la atomicidad transaccional (ACID), este método acepta un cliente de
+ * transacción `tx`. Si ocurre algún fallo al guardar la auditoría, la excepción se propaga y
+ * aborta (Rollback) toda la transacción de la base de datos, impidiendo que existan mutaciones
+ * huérfanas sin historial registrado.
+ * 
  * @param {Object} auditData - Datos de la auditoría.
- * @param {string} auditData.userId - ID del usuario que realiza la acción.
- * @param {string} auditData.action - Acción (CREATE, UPDATE, DELETE, etc).
- * @param {string} auditData.entity - Nombre de la entidad (Trip, User, etc).
- * @param {string} auditData.entityId - ID de la entidad afectada.
- * @param {Object} [auditData.oldValues] - Valores anteriores (Snapshot).
- * @param {Object} [auditData.newValues] - Valores nuevos (Snapshot).
- * @param {string} [auditData.ipAddress] - Dirección IP.
+ * @param {string} auditData.userId - Identificador único de usuario (UUID) que ejecuta la acción
+ * @param {string} auditData.action - Acción realizada ('CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT')
+ * @param {string} auditData.entity - Nombre de la tabla o modelo afectado (ej: 'Trip', 'Vehicle', 'User')
+ * @param {string} auditData.entityId - ID físico del registro afectado
+ * @param {Object} [auditData.oldValues] - Snapshot anterior al cambio en formato JSON
+ * @param {Object} [auditData.newValues] - Snapshot posterior al cambio en formato JSON
+ * @param {string} [auditData.ipAddress] - Dirección IP desde la cual se origina el request
+ * @param {string} [auditData.userAgent] - Cabecera de agente de usuario emisora
+ * @param {Object} [tx] - Instancia de transacción del pool de Prisma (opcional, por defecto usa prisma normal)
  */
 export const logAudit = async (auditData, tx = prisma) => {
   try {
@@ -26,7 +44,10 @@ export const logAudit = async (auditData, tx = prisma) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error en Auditoría:', error);
-    throw error; // Re-lanzar para asegurar que la transacción falle si la auditoría falla
+    // Si la auditoría falla, se escribe en el log local y se propaga el error
+    // para abortar transacciones ACID de negocio de manera controlada.
+    console.error('❌ Error crítico en persistencia de Auditoría Forense:', error);
+    throw error; 
   }
 };
+

@@ -1,9 +1,18 @@
 import * as authService from '../services/auth.service.js';
 
 /**
- * Orquestador de Autenticación.
- * Como DevOps Senior, implementamos HttpOnly Cookies para asegurar que los tokens
- * de sesión no sean accesibles mediante scripts de terceros (XSS).
+ * ============================================================
+ * CONTROLADOR DE AUTENTICACIÓN (AUTH CONTROLLER)
+ * ============================================================
+ * Capa de Seguridad y Orquestación de Sesión.
+ * Implementa el control de acceso inicial y mitigación de vulnerabilidades OWASP.
+ */
+
+/**
+ * @route   POST /api/auth/login
+ * @desc    Autentica credenciales y emite cookies HttpOnly blindadas
+ * @access  Público
+ * @seguridad Implementa 'Zero Visibility' del token al JS del cliente e intercepta IP y User-Agent
  */
 export const login = async (req, res) => {
   const { correo, password } = req.body;
@@ -14,9 +23,9 @@ export const login = async (req, res) => {
     const { user, token } = await authService.login(correo, password, ipAddress, userAgent);
     
     // Configuramos la cookie con flags de seguridad Enterprise-grade:
-    // - httpOnly: Impide acceso desde document.cookie (Mata el XSS)
+    // - httpOnly: Impide acceso desde document.cookie (Mitigación XSS)
     // - secure: Solo viaja por HTTPS (en producción)
-    // - sameSite: Previene ataques CSRF
+    // - sameSite: Previene ataques CSRF (Cross-Site Request Forgery)
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -33,8 +42,10 @@ export const login = async (req, res) => {
 };
 
 /**
- * Cierre de sesión seguro.
- * Elimina la cookie del lado del cliente.
+ * @route   POST /api/auth/logout
+ * @desc    Cierra de sesión seguro y revoca sesión del cliente
+ * @access  Privado (ADMIN, OPERADOR)
+ * @seguridad Remueve físicamente la cookie de sesión del navegador para anular posteriores peticiones
  */
 export const logout = async (req, res) => {
   res.clearCookie('token');
