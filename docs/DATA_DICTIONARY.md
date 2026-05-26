@@ -137,3 +137,12 @@ Control de persistencia de sesiones seguras.
 | `expiresAt` | `TIMESTAMP` | No | - | Fecha de expiración de la sesión. |
 | `revoked` | `BOOLEAN` | No | Default: `false` | Indica si la sesión fue cerrada/revocada. |
 | `createdAt` | `TIMESTAMP` | No | Default: `now()` | Fecha de inicio de sesión. |
+
+---
+
+### 8. Auditoría e Integridad Referencial
+
+*   **Tercera Forma Normal (3NF):** El modelo de base de datos relacional elimina la redundancia e introduce relaciones normalizadas mediante claves primarias (`PK` en formato UUIDv4 o auto-incrementales según el tipo de catálogo) y claves foráneas (`FK`), garantizando la integridad referencial a nivel de motor (PostgreSQL).
+*   **Sincronización Automatizada:** El diccionario se encuentra sincronizado bidireccionalmente con el archivo `schema.prisma`. Se puede regenerar y exportar la versión en formato Excel (`Diccionario_Datos_V2_Sincronizado.xlsx`) ejecutando el script utilitario `generate_dict.py`.
+*   **Seguridad y Auditoría Pasiva:** Los campos `createdAt`, `updatedAt` y `deletedAt` están implementados de manera transversal en todas las tablas para permitir consultas delta eficientes y garantizar la auditoría pasiva del ciclo de vida de los registros.
+

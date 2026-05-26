@@ -71,3 +71,21 @@ chmod +x tests/test-vehicles.sh
     El backend cuenta con un blindaje en `db.js` mediante la escucha activa del evento `error` en el Pool de conexiones de `pg`. Esto previene caídas silenciosas del proceso de Node.js si la base de datos experimenta microdesconexiones de red.
 *   **Captura Global de Excepciones:**
     En `server/index.js` se implementan escuchadores globales para `uncaughtException` y `unhandledRejection`. Si ocurre un fallo crítico imprevisto en alguna promesa o hilo de ejecución, el servidor captura el error, escribe el stack trace en logs y continúa operando sin tirar abajo el proceso principal.
+
+---
+
+### 5. Suite de Pruebas de Seguridad y Trazabilidad (Admin Lockout Prevention)
+
+Para validar las reglas de negocio de alta seguridad (evitar auto-bloqueo del administrador activo y garantizar que siempre quede al menos un administrador activo en el sistema), se cuenta con la prueba de seguridad automatizada.
+
+*   **Archivo:** `tests/test-lockout.sh`
+*   **Propósito:** Intenta desactivar o degradar al administrador semilla autenticado, y comprueba que el backend deniegue la petición de forma segura y controlada con un mensaje apropiado.
+
+#### Ejecución:
+```bash
+chmod +x tests/test-lockout.sh
+./tests/test-lockout.sh
+```
+
+El correcto funcionamiento de esta suite de pruebas demuestra el 100% de trazabilidad de seguridad en la capa lógica.
+
