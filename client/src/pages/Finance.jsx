@@ -70,22 +70,37 @@ const Finance = () => {
       return;
     }
 
-    // Formateo explícito de los registros para el reporte de auditoría
-    const formattedData = trips.map(t => ({
-      'Ticket': `#${t.ticket}`,
-      // Consistencia horaria crucial: se usa timeZone: 'UTC' para que no reste
-      // horas locales (Colombia/Ecuador UTC-5) y muestre el día calendario exacto guardado.
-      'Fecha': new Date(t.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' }),
-      'Conductor': `${t.driver?.primerNombre} ${t.driver?.primerApellido}`,
-      'Cédula': t.driver?.cedula,
-      'Vehículo': t.vehicle?.placa,
-      'Origen': t.origen,
-      'Producto': t.producto,
-      'Tonelaje (Tons)': Number(t.tonelaje),
-      'Consumo ACPM (Gal)': t.consumoAcpm ? Number(t.consumoAcpm) : 0,
-      'Ferry Usado': t.usoFerry ? 'SÍ' : 'NO',
-      'Valor Pago (COP)': Number(t.valorPago)
-    }));
+    // Formateo explícito de los registros para coincidir 100% con la planilla Viajes Novapalma.xlsx
+    const formattedData = trips.map(t => {
+      const driverVal = Number(t.valorConductor || 0);
+      const acpmVal = Number(t.valorAcpm || 0);
+      const ferryVal = Number(t.valorFerry || 0);
+      const totalExpenses = driverVal + acpmVal + ferryVal;
+      const netUtility = Number(t.valorPago) - totalExpenses;
+      
+      const valorTon = Number(t.tonelaje) > 0 
+        ? parseFloat((Number(t.valorPago) / (Number(t.tonelaje) * 1000)).toFixed(3)) 
+        : 0;
+
+      return {
+        'Fecha': new Date(t.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' }),
+        'PLACA': t.vehicle?.placa || '',
+        'Conductor': t.driver ? `${t.driver.primerNombre} ${t.driver.primerApellido}` : '',
+        'Empresa': t.empresa || 'N/A',
+        'ORIGEN': t.origen || '',
+        'DESTINO': t.destino || 'N/A',
+        'PRODUCTO': t.producto || '',
+        'TIQUETE': t.ticket || 0,
+        'KILOGRAMOS': Number(t.tonelaje) * 1000,
+        'VALOR TONELADA': valorTon,
+        'VALOR FLETE VIAJE': Number(t.valorPago),
+        'PORCENTAJE CONDUCTOR': driverVal,
+        'ACPM': acpmVal,
+        'FERRY': ferryVal,
+        'GASTOS': totalExpenses,
+        'NETO': netUtility
+      };
+    });
 
     // Conversión de JSON estructurado a hoja física de XLSX
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
@@ -102,7 +117,7 @@ const Finance = () => {
 
     // Crea el libro de trabajo (workbook) y añade la pestaña de reporte consolidado
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte Financiero');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Hoja1'); // Nombre de pestaña 'Hoja1' igual que el original
 
     // Dispara la descarga del reporte etiquetado con la marca temporal actual
     XLSX.writeFile(workbook, `reporte_financiero_novapalma_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -183,30 +198,33 @@ const Finance = () => {
       <div className="row g-4 mb-4">
         <div className="col-md-3">
           <div className="card p-3 border-0 shadow-sm bg-primary text-white">
-            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Ingresos Totales (Facturación)</small>
-            <h3 className="fw-bold mt-1 mb-0">${Number(stats.totalBilling).toLocaleString()}</h3>
-            <span className="small opacity-90 mt-1 d-inline-block">COP consolidado</span>
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Ingresos Totales (Flete)</small>
+            <h3 className="fw-bold mt-1 mb-0">${Number(stats.totalBilling || 0).toLocaleString()}</h3>
+            <span className="small opacity-90 mt-1 d-inline-block">COP facturado</span>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card p-3 border-0 shadow-sm bg-danger text-white">
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Gastos Operativos (Total)</small>
+            <h3 className="fw-bold mt-1 mb-0">${Number(stats.totalExpenses || 0).toLocaleString()}</h3>
+            <span className="small opacity-90 mt-1 d-inline-block">Conductor + ACPM + Ferry</span>
           </div>
         </div>
         <div className="col-md-3">
           <div className="card p-3 border-0 shadow-sm bg-success text-white">
-            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Carga Total Transportada</small>
-            <h3 className="fw-bold mt-1 mb-0">{Number(stats.totalTons).toFixed(2)} Ton</h3>
-            <span className="small opacity-90 mt-1 d-inline-block">Peso total registrado</span>
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Utilidad Neta (Neto)</small>
+            <h3 className="fw-bold mt-1 mb-0">${Number(stats.totalNet || 0).toLocaleString()}</h3>
+            <span className="small opacity-90 mt-1 d-inline-block">COP rentabilidad real</span>
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card p-3 border-0 shadow-sm bg-info text-white">
-            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Combustible ACPM Consumido</small>
-            <h3 className="fw-bold mt-1 mb-0">{Number(stats.totalAcpm).toFixed(1)} Gal</h3>
-            <span className="small opacity-90 mt-1 d-inline-block">Consumo total estimado</span>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card p-3 border-0 shadow-sm bg-warning text-white">
-            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Cruces de Ferry</small>
-            <h3 className="fw-bold mt-1 mb-0">{stats.totalFerryCrossings}</h3>
-            <span className="small opacity-90 mt-1 d-inline-block">Tránsitos fluviales</span>
+          <div className="card p-3 border-0 shadow-sm bg-dark text-white">
+            <small className="opacity-85 text-uppercase fw-semibold" style={{ fontSize: '15px' }}>Desglose de Gastos</small>
+            <div className="mt-1 small" style={{ fontSize: '12px' }}>
+              <div className="d-flex justify-content-between"><span>Conductor:</span> <span className="fw-bold">${Number(stats.totalDriverPayout || 0).toLocaleString()}</span></div>
+              <div className="d-flex justify-content-between"><span>ACPM:</span> <span className="fw-bold">${Number(stats.totalAcpmCost || 0).toLocaleString()}</span></div>
+              <div className="d-flex justify-content-between"><span>Ferry:</span> <span className="fw-bold">${Number(stats.totalFerryCost || 0).toLocaleString()}</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -237,49 +255,63 @@ const Finance = () => {
               <tr>
                 <th className="px-4 py-3 text-secondary small text-uppercase fw-bold">Ticket</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Fecha</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold">Conductor</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Vehículo</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Ruta (Origen &rarr; Destino)</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Empresa</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Producto</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Tonelaje</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold">ACPM</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold">Ferry</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold px-4 text-end">Valor Pago</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Costo ACPM</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Costo Ferry</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Pago Cond.</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Gastos</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold px-4 text-end">Flete (Ingreso)</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-5 text-muted">
+                  <td colSpan="12" className="text-center py-5 text-muted">
                     <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                     Cargando informe...
                   </td>
                 </tr>
               ) : trips.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-5 text-muted">No se encontraron registros de viajes en el rango seleccionado.</td>
+                  <td colSpan="12" className="text-center py-5 text-muted">No se encontraron registros de viajes en el rango seleccionado.</td>
                 </tr>
               ) : (
-                trips.map((t) => (
-                  <tr key={t.id}>
-                    <td className="px-4 fw-bold text-primary">#{t.ticket}</td>
-                    <td>{new Date(t.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
-                    <td className="fw-medium">{t.driver?.primerNombre} {t.driver?.primerApellido}</td>
-                    <td><span className="badge bg-light text-dark border">{t.vehicle?.placa}</span></td>
-                    <td>
-                      <span className={`badge px-2 py-1 rounded-pill ${t.producto === 'FRUTO' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'}`}>
-                        {t.producto}
-                      </span>
-                    </td>
-                    <td>{t.tonelaje} Ton</td>
-                    <td>{t.consumoAcpm || 0} Gal</td>
-                    <td>
-                      <span className={`badge px-2 py-0.5 rounded-pill ${t.usoFerry ? 'bg-info-subtle text-info' : 'bg-light text-muted border'}`}>
-                        {t.usoFerry ? 'SÍ' : 'NO'}
-                      </span>
-                    </td>
-                    <td className="fw-bold px-4 text-end text-dark">${Number(t.valorPago).toLocaleString()}</td>
-                  </tr>
-                ))
+                trips.map((t) => {
+                  const driverVal = Number(t.valorConductor || 0);
+                  const acpmVal = Number(t.valorAcpm || 0);
+                  const ferryVal = Number(t.valorFerry || 0);
+                  const totalExpenses = driverVal + acpmVal + ferryVal;
+
+                  return (
+                    <tr key={t.id}>
+                      <td className="px-4 fw-bold text-primary">#{t.ticket}</td>
+                      <td>{new Date(t.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
+                      <td><span className="badge bg-light text-dark border">{t.vehicle?.placa}</span></td>
+                      <td className="small fw-medium">
+                        {t.origen} 
+                        {t.destino ? <span className="text-secondary"> &rarr; {t.destino}</span> : ''}
+                      </td>
+                      <td className="text-muted small">{t.empresa || 'N/A'}</td>
+                      <td>
+                        <span className={`badge px-2 py-1 rounded-pill ${t.producto === 'FRUTO' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'}`}>
+                          {t.producto}
+                        </span>
+                      </td>
+                      <td>{t.tonelaje} Ton</td>
+                      <td className="text-danger small">${acpmVal.toLocaleString()}</td>
+                      <td className="text-danger small">${ferryVal.toLocaleString()}</td>
+                      <td className="text-success small fw-medium">
+                        ${driverVal.toLocaleString()} <small className="text-muted">({Number(t.porcentajeConductor || 1.0)}%)</small>
+                      </td>
+                      <td className="text-danger small fw-semibold">${totalExpenses.toLocaleString()}</td>
+                      <td className="fw-bold px-4 text-end text-dark">${Number(t.valorPago).toLocaleString()}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

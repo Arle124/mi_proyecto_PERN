@@ -19,6 +19,8 @@ const Trips = ({ isDashboard = false }) => {
     ticket: '',
     fecha: new Date().toISOString().split('T')[0],
     origen: '',
+    destino: '',
+    empresa: '',
     producto: 'FRUTO',
     tipoPago: 'TRANSFERENCIA',
     tonelaje: '',
@@ -26,7 +28,10 @@ const Trips = ({ isDashboard = false }) => {
     driverId: '',
     vehicleId: '',
     consumoAcpm: 0,
-    usoFerry: false
+    usoFerry: false,
+    porcentajeConductor: 1.00,
+    valorAcpm: '',
+    valorFerry: ''
   });
 
   useEffect(() => {
@@ -85,7 +90,14 @@ const Trips = ({ isDashboard = false }) => {
       return;
     }
     
-    if (name === 'tonelaje' || name === 'consumoAcpm' || name === 'valorPago') {
+    if (
+      name === 'tonelaje' || 
+      name === 'consumoAcpm' || 
+      name === 'valorPago' || 
+      name === 'porcentajeConductor' || 
+      name === 'valorAcpm' || 
+      name === 'valorFerry'
+    ) {
       // Sanitización para inputs numéricos flotantes:
       // 1. Elimina guiones negativos (prevención de fletes negativos).
       let cleanedValue = value.replace(/-/g, '');
@@ -142,11 +154,16 @@ const Trips = ({ isDashboard = false }) => {
         ticket: parseInt(formData.ticket, 10),
         fecha: formData.fecha,
         origen: formData.origen,
+        destino: formData.destino || null,
+        empresa: formData.empresa || null,
         producto: formData.producto,
         tipoPago: formData.tipoPago,
         tonelaje: parseFloat(formData.tonelaje),
         consumoAcpm: parseFloat(formData.consumoAcpm) || 0,
         usoFerry: formData.usoFerry,
+        porcentajeConductor: parseFloat(formData.porcentajeConductor) || 1.00,
+        valorAcpm: parseFloat(formData.valorAcpm) || 0,
+        valorFerry: parseFloat(formData.valorFerry) || 0,
         driverId: formData.driverId,
         vehicleId: formData.vehicleId,
       };
@@ -164,6 +181,8 @@ const Trips = ({ isDashboard = false }) => {
         ticket: '',
         fecha: new Date().toISOString().split('T')[0],
         origen: '',
+        destino: '',
+        empresa: '',
         producto: 'FRUTO',
         tipoPago: 'TRANSFERENCIA',
         tonelaje: '',
@@ -171,7 +190,10 @@ const Trips = ({ isDashboard = false }) => {
         driverId: '',
         vehicleId: '',
         consumoAcpm: 0,
-        usoFerry: false
+        usoFerry: false,
+        porcentajeConductor: 1.00,
+        valorAcpm: '',
+        valorFerry: ''
       });
     } catch (error) {
       setError(error.response?.data?.error || 'Error al registrar el viaje');
@@ -204,45 +226,66 @@ const Trips = ({ isDashboard = false }) => {
               <tr>
                 <th className="px-4 py-3 text-secondary small text-uppercase fw-bold">Ticket</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Fecha</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold">Conductor</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Vehículo</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Ruta (Origen &rarr; Destino)</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Empresa</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Producto</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Tonelaje</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold">Valor Pago</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold">Registrado Por</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Valor Flete</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Conductor</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Pago Cond.</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Gastos</th>
+                <th className="py-3 text-secondary small text-uppercase fw-bold">Margen Neto</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5">
+                  <td colSpan="12" className="text-center py-5">
                     <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                     Cargando viajes registrados...
                   </td>
                 </tr>
               ) : trips.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">No se encontraron registros de viajes.</td>
+                  <td colSpan="12" className="text-center py-5 text-muted">No se encontraron registros de viajes.</td>
                 </tr>
               ) : (
-                trips.map((trip) => (
-                  <tr key={trip.id}>
-                    <td className="px-4 fw-bold text-primary">#{trip.ticket}</td>
-                    <td>{new Date(trip.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
-                    <td>{trip.driver?.primerNombre} {trip.driver?.primerApellido}</td>
-                    <td><span className="badge bg-light text-dark border">{trip.vehicle?.placa}</span></td>
-                    <td>
-                      <span className={`badge px-3 py-1.5 rounded-pill ${trip.producto === 'FRUTO' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'}`}>
-                        {trip.producto}
-                      </span>
-                    </td>
-                    <td>{trip.tonelaje} Ton</td>
-                    <td className="fw-bold">${Number(trip.valorPago).toLocaleString()}</td>
-                    <td className="text-muted small">
-                      {trip.registradoPor?.primerNombre} {trip.registradoPor?.primerApellido}
-                    </td>
-                  </tr>
-                ))
+                trips.map((trip) => {
+                  const driverVal = Number(trip.valorConductor || 0);
+                  const acpmVal = Number(trip.valorAcpm || 0);
+                  const ferryVal = Number(trip.valorFerry || 0);
+                  const totalExpenses = driverVal + acpmVal + ferryVal;
+                  const netUtility = Number(trip.valorPago) - totalExpenses;
+
+                  return (
+                    <tr key={trip.id}>
+                      <td className="px-4 fw-bold text-primary">#{trip.ticket}</td>
+                      <td>{new Date(trip.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
+                      <td><span className="badge bg-light text-dark border">{trip.vehicle?.placa}</span></td>
+                      <td className="small fw-medium">
+                        {trip.origen} 
+                        {trip.destino ? <span className="text-secondary"> &rarr; {trip.destino}</span> : ''}
+                      </td>
+                      <td className="text-muted small">{trip.empresa || 'N/A'}</td>
+                      <td>
+                        <span className={`badge px-2 py-1 rounded-pill ${trip.producto === 'FRUTO' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'}`}>
+                          {trip.producto}
+                        </span>
+                      </td>
+                      <td className="small">{trip.tonelaje} Ton</td>
+                      <td className="fw-bold text-dark small">${Number(trip.valorPago).toLocaleString()}</td>
+                      <td className="small">{trip.driver?.primerNombre} {trip.driver?.primerApellido}</td>
+                      <td className="text-success small fw-semibold">
+                        ${driverVal.toLocaleString()} <small className="text-muted">({Number(trip.porcentajeConductor || 1.0)}%)</small>
+                      </td>
+                      <td className="text-danger small">${totalExpenses.toLocaleString()}</td>
+                      <td className={`fw-bold small ${netUtility >= 0 ? 'text-success' : 'text-danger'}`}>
+                        ${netUtility.toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -294,14 +337,55 @@ const Trips = ({ isDashboard = false }) => {
                         required 
                       />
                     </div>
-                    <div className="col-md-12">
-                      <label className="form-label small fw-bold">Ruta / Origen / Destino *</label>
+
+                    {/* RUTA (ORIGEN Y DESTINO SEPARADOS) */}
+                    <div className="col-md-6">
+                      <label className="form-label small fw-bold">Origen / Punto de Carga *</label>
                       <input 
                         type="text" 
                         name="origen" 
                         className="form-control" 
-                        placeholder="Ej: Finca El Recreo -> Planta Central" 
+                        placeholder="Ej: Extractora-Gloria" 
                         value={formData.origen} 
+                        onChange={handleInputChange} 
+                        required 
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-bold">Destino / Punto de Descarga *</label>
+                      <input 
+                        type="text" 
+                        name="destino" 
+                        className="form-control" 
+                        placeholder="Ej: Hacienda-Gloria" 
+                        value={formData.destino} 
+                        onChange={handleInputChange} 
+                        required 
+                      />
+                    </div>
+
+                    <div className="col-md-6">
+                      <label className="form-label small fw-bold">Empresa / Cliente</label>
+                      <input 
+                        type="text" 
+                        name="empresa" 
+                        className="form-control" 
+                        placeholder="Ej: EXTRACTORA - GLORIA" 
+                        value={formData.empresa} 
+                        onChange={handleInputChange} 
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-bold">Porcentaje Conductor (%) *</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        min="0"
+                        onKeyDown={handleKeyDownPositive}
+                        name="porcentajeConductor" 
+                        className="form-control" 
+                        placeholder="Ej: 1.00" 
+                        value={formData.porcentajeConductor} 
                         onChange={handleInputChange} 
                         required 
                       />
@@ -340,8 +424,8 @@ const Trips = ({ isDashboard = false }) => {
                       </select>
                     </div>
 
-                     <div className="col-md-4">
-                      <label className="form-label small fw-bold">Tonelaje Real *</label>
+                    <div className="col-md-4">
+                      <label className="form-label small fw-bold">Tonelaje Real (Tons) *</label>
                       <input 
                         type="number" 
                         step="0.001" 
@@ -364,6 +448,7 @@ const Trips = ({ isDashboard = false }) => {
                         onKeyDown={handleKeyDownPositive}
                         name="consumoAcpm" 
                         className="form-control" 
+                        placeholder="Ej: 15.0"
                         value={formData.consumoAcpm} 
                         onChange={handleInputChange} 
                       />
@@ -382,46 +467,114 @@ const Trips = ({ isDashboard = false }) => {
                       </div>
                     </div>
 
-                    {/* DYNAMIC PRICE SECTION */}
+                    {/* COSTOS FINANCIEROS REALES */}
+                    <div className="col-md-6">
+                      <label className="form-label small fw-bold">Costo ACPM Real (COP)</label>
+                      <div className="input-group">
+                        <span className="input-group-text">$</span>
+                        <input 
+                          type="number" 
+                          min="0"
+                          onKeyDown={handleKeyDownPositive}
+                          name="valorAcpm" 
+                          className="form-control" 
+                          placeholder="Ej: 349291" 
+                          value={formData.valorAcpm} 
+                          onChange={handleInputChange} 
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small fw-bold">Costo Ferry Real (COP)</label>
+                      <div className="input-group">
+                        <span className="input-group-text">$</span>
+                        <input 
+                          type="number" 
+                          min="0"
+                          onKeyDown={handleKeyDownPositive}
+                          name="valorFerry" 
+                          className="form-control" 
+                          placeholder="Ej: 220000" 
+                          value={formData.valorFerry} 
+                          onChange={handleInputChange} 
+                        />
+                      </div>
+                    </div>
+
+                    {/* DYNAMIC PRICE & MARGIN PREVIEW SECTION */}
                     <div className="col-12 mt-4 p-3 bg-light rounded border border-light-subtle">
-                      {formData.producto === 'FRUTO' ? (
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO</span>
-                            <h6 className="m-0 fw-bold">Fruto de Palma por Kilogramo</h6>
-                            <small className="text-muted">Tarifa vigente configurada por kg: <strong>${valorKgFruto} COP</strong></small>
-                          </div>
-                          <div className="text-end">
-                            <small className="text-secondary small fw-medium">Valor Total Liquidado</small>
-                            <h4 className="m-0 fw-bold text-success">${Number(getCalculatedPayment()).toLocaleString()}</h4>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="row align-items-center">
-                          <div className="col-md-6">
-                            <span className="badge bg-warning text-dark mb-1">PRECIO MANUAL ESTIPULADO</span>
-                            <h6 className="m-0 fw-bold">Compost (Abono Orgánico)</h6>
-                            <small className="text-muted">Ingresa el valor total acordado con el cliente.</small>
-                          </div>
-                          <div className="col-md-6">
-                            <label className="form-label small fw-bold text-primary">Valor Pactado (COP) *</label>
-                            <div className="input-group">
-                              <span className="input-group-text">$</span>
-                              <input 
-                                type="number" 
-                                min="0"
-                                onKeyDown={handleKeyDownPositive}
-                                name="valorPago" 
-                                className="form-control fw-bold text-end" 
-                                placeholder="Ej: 450000" 
-                                value={formData.valorPago} 
-                                onChange={handleInputChange} 
-                                required={formData.producto === 'COMPOST'} 
-                              />
+                      <div className="row g-3">
+                        <div className="col-md-6">
+                          {formData.producto === 'FRUTO' ? (
+                            <div>
+                              <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO</span>
+                              <h6 className="m-0 fw-bold">Fruto de Palma por Kilogramo</h6>
+                              <small className="text-muted">Tarifa vigente por kg: <strong>${valorKgFruto} COP</strong></small>
+                              <div className="mt-3">
+                                <small className="text-secondary small fw-medium">Valor Flete Liquidado</small>
+                                <h4 className="fw-bold text-success m-0">${Number(getCalculatedPayment()).toLocaleString()} COP</h4>
+                              </div>
                             </div>
+                          ) : (
+                            <div>
+                              <span className="badge bg-warning text-dark mb-1">PRECIO MANUAL ESTIPULADO</span>
+                              <h6 className="m-0 fw-bold">Compost (Abono Orgánico)</h6>
+                              <small className="text-muted">Ingresa el valor del flete acordado.</small>
+                              <div className="mt-2">
+                                <label className="form-label small fw-bold text-primary">Valor Pactado Flete (COP) *</label>
+                                <div className="input-group">
+                                  <span className="input-group-text">$</span>
+                                  <input 
+                                    type="number" 
+                                    min="0"
+                                    onKeyDown={handleKeyDownPositive}
+                                    name="valorPago" 
+                                    className="form-control fw-bold text-end" 
+                                    placeholder="Ej: 450000" 
+                                    value={formData.valorPago} 
+                                    onChange={handleInputChange} 
+                                    required={formData.producto === 'COMPOST'} 
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* LIVE RENTABILITY PREVIEWER */}
+                        <div className="col-md-6 border-start ps-4">
+                          <h6 className="fw-bold mb-2 text-secondary small text-uppercase">Previsualización de Rentabilidad</h6>
+                          
+                          <div className="d-flex justify-content-between mb-1 small">
+                            <span className="text-muted">Ingreso Flete:</span>
+                            <span className="fw-semibold text-dark">${Number(getCalculatedPayment()).toLocaleString()}</span>
+                          </div>
+                          
+                          <div className="d-flex justify-content-between mb-1 small">
+                            <span className="text-muted">Pago Conductor ({formData.porcentajeConductor || 1}%):</span>
+                            <span className="text-danger fw-semibold">-${Number(getCalculatedPayment() * (parseFloat(formData.porcentajeConductor || 1) / 100)).toLocaleString()}</span>
+                          </div>
+                          
+                          <div className="d-flex justify-content-between mb-1 small">
+                            <span className="text-muted">Gasto ACPM (COP):</span>
+                            <span className="text-danger fw-semibold">-${Number(formData.valorAcpm || 0).toLocaleString()}</span>
+                          </div>
+                          
+                          <div className="d-flex justify-content-between mb-2 small">
+                            <span className="text-muted">Gasto Ferry (COP):</span>
+                            <span className="text-danger fw-semibold">-${Number(formData.valorFerry || 0).toLocaleString()}</span>
+                          </div>
+                          
+                          <hr className="my-2" />
+                          
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span className="fw-bold text-secondary">Margen Neto (Utilidad):</span>
+                            <span className={`fw-bold fs-5 ${getCalculatedPayment() - (getCalculatedPayment() * (parseFloat(formData.porcentajeConductor || 1) / 100) + parseFloat(formData.valorAcpm || 0) + parseFloat(formData.valorFerry || 0)) >= 0 ? 'text-success' : 'text-danger'}`}>
+                              ${Number(getCalculatedPayment() - (getCalculatedPayment() * (parseFloat(formData.porcentajeConductor || 1) / 100) + parseFloat(formData.valorAcpm || 0) + parseFloat(formData.valorFerry || 0))).toLocaleString()}
+                            </span>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
