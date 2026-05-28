@@ -7,7 +7,6 @@ import Login from './pages/Login';
 import Trips from './pages/Trips';
 import Vehicles from './pages/Vehicles';
 import Drivers from './pages/Drivers';
-import Tariffs from './pages/Tariffs';
 import Users from './pages/Users';
 import Finance from './pages/Finance';
 import Dashboard from './pages/Dashboard';
@@ -63,14 +62,7 @@ function App() {
               </AdminRoute>
             } 
           />
-          <Route 
-            path="/tarifas" 
-            element={
-              <AdminRoute>
-                <Layout><Tariffs /></Layout>
-              </AdminRoute>
-            } 
-          />
+
           <Route 
             path="/finanzas" 
             element={

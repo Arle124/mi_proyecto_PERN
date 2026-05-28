@@ -113,23 +113,6 @@ model Vehicle {
 }
 
 // ============================================================
-// TARIFAS — Reglas de Negocio (RF09, RF10)
-// ============================================================
-
-model RateTariff {
-  id           Int          @id @default(autoincrement())
-  producto     ProductType  @unique
-  valorKg      Decimal      @db.Decimal(12, 2)
-  activo       Boolean      @default(true)
-
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  deletedAt    DateTime?
-
-  @@map("rate_tariffs")
-}
-
-// ============================================================
 // VIAJES — Núcleo Transaccional (RF07–RF13)
 // ============================================================
 

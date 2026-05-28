@@ -22,24 +22,11 @@ export const createTrip = async (tripData, userId) => {
 
     if (!driver || !driver.activo) throw new Error('Conductor no encontrado o inactivo');
 
-    // 3. Calcular o asignar valor del pago
-    let valorPago = 0;
-    if (tripData.producto === 'FRUTO') {
-      const tariff = await tx.rateTariff.findUnique({
-        where: { producto: 'FRUTO' }
-      });
-      if (!tariff || !tariff.activo) throw new Error('No se encontró una tarifa activa configurada para FRUTO');
-      
-      // valorPago = toneladas * 1000 kg/ton * valor por kg
-      valorPago = Number(tripData.tonelaje) * 1000 * Number(tariff.valorKg);
-    } else if (tripData.producto === 'COMPOST') {
-      if (tripData.valorPago === undefined || tripData.valorPago === null) {
-        throw new Error('El valor del pago es obligatorio para el producto COMPOST');
-      }
-      valorPago = Number(tripData.valorPago);
-    } else {
-      throw new Error(`Producto no válido: ${tripData.producto}`);
+    // 3. Asignar valor del flete (completamente manual)
+    if (tripData.valorPago === undefined || tripData.valorPago === null) {
+      throw new Error('El valor del flete es obligatorio');
     }
+    const valorPago = Number(tripData.valorPago);
 
     // 4. Calcular el pago al conductor (porcentaje del flete)
     const pct = tripData.porcentajeConductor !== undefined && tripData.porcentajeConductor !== null 
@@ -148,22 +135,9 @@ export const updateTrip = async (id, updateData, userId) => {
       dataToUpdate.ticket = Number(updateData.ticket);
     }
 
-    // 2. Si cambia tonelaje, producto o valorPago, gestionar re-cálculos
-    const producto = updateData.producto || oldTrip.producto;
-    const tonelaje = updateData.tonelaje !== undefined ? updateData.tonelaje : oldTrip.tonelaje;
-
-    if (producto === 'FRUTO') {
-      const tariff = await tx.rateTariff.findUnique({
-        where: { producto: 'FRUTO' }
-      });
-      if (!tariff || !tariff.activo) throw new Error('No se encontró una tarifa activa para FRUTO');
-      dataToUpdate.valorPago = Number(tonelaje) * 1000 * Number(tariff.valorKg);
-    } else if (producto === 'COMPOST') {
-      if (updateData.valorPago !== undefined && updateData.valorPago !== null) {
-        dataToUpdate.valorPago = Number(updateData.valorPago);
-      } else if (oldTrip.producto !== 'COMPOST') {
-        throw new Error('Debe especificar el valor del pago para el producto COMPOST');
-      }
+    // 2. Si cambia valorPago, asegurar número
+    if (updateData.valorPago !== undefined && updateData.valorPago !== null) {
+      dataToUpdate.valorPago = Number(updateData.valorPago);
     }
 
     // Convertir campos numéricos adicionales si vienen definidos

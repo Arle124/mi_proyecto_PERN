@@ -87,9 +87,6 @@ const Layout = ({ children }) => {
               <NavLink to="/usuarios" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
                 <Users size={20} /> Usuarios
               </NavLink>
-              <NavLink to="/tarifas" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
-                <Banknote size={20} /> Tarifas
-              </NavLink>
               <NavLink to="/finanzas" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
                 <DollarSign size={20} /> Finanzas
               </NavLink>

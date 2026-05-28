@@ -6,13 +6,9 @@ const Trips = ({ isDashboard = false }) => {
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
-  const [tariffs, setTariffs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
-  
-  // Valor por kg de Fruto cargado de base de datos
-  const [valorKgFruto, setValorKgFruto] = useState(25); // Valor por defecto
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -40,24 +36,14 @@ const Trips = ({ isDashboard = false }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [tripsRes, driversRes, vehiclesRes, tariffsRes] = await Promise.all([
+      const [tripsRes, driversRes, vehiclesRes] = await Promise.all([
         api.get('/viajes'),
         api.get('/conductores'),
-        api.get('/vehiculos'),
-        api.get('/tarifas')
+        api.get('/vehiculos')
       ]);
       setTrips(tripsRes.data);
       setDrivers(driversRes.data);
       setVehicles(vehiclesRes.data); // No filtering by status, late planillas are flexible!
-      
-      const tariffsData = tariffsRes.data;
-      setTariffs(tariffsData);
-      
-      // Buscar el valor del Kg para FRUTO
-      const fruitTariff = tariffsData.find(t => t.producto === 'FRUTO');
-      if (fruitTariff) {
-        setValorKgFruto(Number(fruitTariff.valorKg));
-      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -140,16 +126,10 @@ const Trips = ({ isDashboard = false }) => {
   };
 
   /**
-   * CÁLCULO DE LIQUIDACIÓN DE FLETES EN TIEMPO REAL
-   * - FRUTO: Liquidación automática: Toneladas * 1000 * Tarifa base de Fruto.
-   * - COMPOST: Permite asignación manual acordada, ya que no tiene tarifa estandarizada por kg.
+   * OBTENCIÓN DEL VALOR PAGO PACTADO (MANUAL)
+   * En Novapalma, todas las tarifas de fletes son ingresadas de forma manual.
    */
   const getCalculatedPayment = () => {
-    if (formData.producto === 'FRUTO') {
-      const tons = parseFloat(formData.tonelaje) || 0;
-      return tons * 1000 * valorKgFruto;
-    }
-    // Para compost retorna el valor ingresado
     return parseFloat(formData.valorPago) || 0;
   };
 
@@ -175,9 +155,7 @@ const Trips = ({ isDashboard = false }) => {
         vehicleId: formData.vehicleId,
       };
 
-      if (formData.producto === 'COMPOST') {
-        payload.valorPago = parseFloat(formData.valorPago);
-      }
+      payload.valorPago = parseFloat(formData.valorPago) || 0;
       
       await api.post('/viajes', payload);
       setShowModal(false);
@@ -506,40 +484,28 @@ const Trips = ({ isDashboard = false }) => {
                     <div className="col-12 mt-4 p-3 bg-light rounded border border-light-subtle">
                       <div className="row g-3">
                         <div className="col-md-6">
-                          {formData.producto === 'FRUTO' ? (
-                            <div>
-                              <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO</span>
-                              <h6 className="m-0 fw-bold">Fruto de Palma por Kilogramo</h6>
-                              <small className="text-muted">Tarifa vigente por kg: <strong>${valorKgFruto} COP</strong></small>
-                              <div className="mt-3">
-                                <small className="text-secondary small fw-medium">Valor Flete Liquidado</small>
-                                <h4 className="fw-bold text-success m-0">${Number(getCalculatedPayment()).toLocaleString()} COP</h4>
+                          <div>
+                            <span className="badge bg-primary mb-1">PRECIO MANUAL ESTIPULADO</span>
+                            <h6 className="m-0 fw-bold mb-1">Valor de Flete Pactado</h6>
+                            <p className="text-muted small mb-2">Las tarifas se calculan de forma manual y se ingresan directamente al sistema.</p>
+                            <div className="mt-2">
+                              <label className="form-label small fw-bold text-primary">Costo Flete Pactado (COP) *</label>
+                              <div className="input-group">
+                                <span className="input-group-text">$</span>
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  onKeyDown={handleKeyDownPositive}
+                                  name="valorPago" 
+                                  className="form-control fw-bold text-end" 
+                                  placeholder="Ej: 450000" 
+                                  value={formData.valorPago} 
+                                  onChange={handleInputChange} 
+                                  required 
+                                />
                               </div>
                             </div>
-                          ) : (
-                            <div>
-                              <span className="badge bg-warning text-dark mb-1">PRECIO MANUAL ESTIPULADO</span>
-                              <h6 className="m-0 fw-bold">Compost (Abono Orgánico)</h6>
-                              <small className="text-muted">Ingresa el valor del flete acordado.</small>
-                              <div className="mt-2">
-                                <label className="form-label small fw-bold text-primary">Valor Pactado Flete (COP) *</label>
-                                <div className="input-group">
-                                  <span className="input-group-text">$</span>
-                                  <input 
-                                    type="number" 
-                                    min="0"
-                                    onKeyDown={handleKeyDownPositive}
-                                    name="valorPago" 
-                                    className="form-control fw-bold text-end" 
-                                    placeholder="Ej: 450000" 
-                                    value={formData.valorPago} 
-                                    onChange={handleInputChange} 
-                                    required={formData.producto === 'COMPOST'} 
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                          </div>
                         </div>
 
                         {/* LIVE RENTABILITY PREVIEWER */}

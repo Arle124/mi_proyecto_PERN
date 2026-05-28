@@ -3,7 +3,6 @@ import userRoutes from './user.routes.js';
 import vehicleRoutes from './vehicle.routes.js';
 import driverRoutes from './driver.routes.js';
 import tripRoutes from './trip.routes.js';
-import rateTariffRoutes from './rate-tariff.routes.js';
 import authRoutes from './auth.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import financeRoutes from './finance.routes.js';
@@ -20,7 +19,6 @@ router.use('/usuarios', authMiddleware, adminMiddleware, userRoutes);
 router.use('/vehiculos', authMiddleware, vehicleRoutes);
 router.use('/conductores', authMiddleware, driverRoutes);
 router.use('/viajes', authMiddleware, tripRoutes);
-router.use('/tarifas', authMiddleware, rateTariffRoutes);
 router.use('/dashboard', authMiddleware, dashboardRoutes);
 router.use('/finanzas', authMiddleware, adminMiddleware, financeRoutes);
 

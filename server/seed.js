@@ -45,20 +45,6 @@ async function main() {
   });
   console.log(`👤 Usuario Operador: ${operator.correo}`);
 
-  // 3. Crear Tarifas Base
-  // Para el producto FRUTO (Fruta): $25 COP por kg.
-  const tariffs = [
-    { producto: 'FRUTO', valorKg: 25.00 }
-  ];
-
-  for (const tariff of tariffs) {
-    const t = await prisma.rateTariff.upsert({
-      where: { producto: tariff.producto },
-      update: { valorKg: tariff.valorKg },
-      create: tariff,
-    });
-    console.log(`💰 Tarifa configurada: ${t.producto} -> $${t.valorKg} por Kg`);
-  }
 
   // 4. Vehículo de prueba
   const vehicle = await prisma.vehicle.upsert({
