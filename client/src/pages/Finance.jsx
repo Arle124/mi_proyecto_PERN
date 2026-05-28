@@ -231,50 +231,43 @@ const Finance = () => {
 
       {/* Printable Report Title - only visible when printing */}
       <div className="print-only mb-4 text-center print-header">
-        <h2 className="fw-bold text-dark m-0" style={{ letterSpacing: '1px' }}>NOVAPALMA LOGÍSTICA S.A.S.</h2>
-        <p className="text-secondary small m-1 fw-semibold">Nit: 900.123.456-7 — Reporte de Auditoría y Balance Financiero</p>
-        <div style={{ width: '80px', height: '3px', backgroundColor: '#3b82f6', margin: '8px auto' }}></div>
-        <div className="d-flex justify-content-between text-muted small px-3 mt-3 border-top border-bottom py-2 bg-light">
-          <span><strong>Fecha Generación:</strong> {new Date().toLocaleString()}</span>
-          <span><strong>Rango de Auditoría:</strong> {startDate || 'Inicio del registro'} hasta {endDate || 'Fecha actual'}</span>
+        <h3 className="fw-bold text-dark m-0" style={{ fontSize: '18px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>NOVAPALMA LOGÍSTICA S.A.S.</h3>
+        <p className="text-secondary small m-1" style={{ fontSize: '10px' }}>Nit: 900.123.456-7 — Reporte Oficial de Auditoría Financiera</p>
+        <div style={{ borderBottom: '2px solid #0f172a', margin: '10px 0' }}></div>
+        <div className="d-flex justify-content-between text-muted" style={{ fontSize: '9px', padding: '0 5px' }}>
+          <span><strong>Fecha de Generación:</strong> {new Date().toLocaleString()}</span>
+          <span><strong>Rango de Auditoría:</strong> {startDate || 'Desde el origen'} hasta {endDate || 'Fecha actual'}</span>
         </div>
       </div>
 
-      {/* Financial Summary for Print Only (Stunning Executive Layout) */}
-      <div className="print-only mb-4 pt-2">
-        <div className="row-print-summary">
-          <div className="col-print-4">
-            <div className="print-summary-box border-left-primary">
-              <span className="print-box-title">Ingresos Totales (Flete)</span>
-              <h4 className="print-box-value text-primary">${Number(stats.totalBilling || 0).toLocaleString()}</h4>
-              <span className="print-box-sub">Volumen de ventas brutas</span>
-            </div>
-          </div>
-          <div className="col-print-4">
-            <div className="print-summary-box border-left-danger">
-              <span className="print-box-title">Gastos Operativos</span>
-              <h4 className="print-box-value text-danger">${Number(stats.totalExpenses || 0).toLocaleString()}</h4>
-              <span className="print-box-sub">Conductor + Combustible + Peajes</span>
-            </div>
-          </div>
-          <div className="col-print-4">
-            <div className="print-summary-box border-left-success">
-              <span className="print-box-title">Utilidad Neta (Margen)</span>
-              <h4 className="print-box-value text-success">${Number(stats.totalNet || 0).toLocaleString()}</h4>
-              <span className="print-box-sub">Rentabilidad operativa real</span>
-            </div>
-          </div>
-          <div className="col-print-4">
-            <div className="print-summary-box border-left-dark">
-              <span className="print-box-title">Desglose de Egresos</span>
-              <div className="print-box-details">
-                <div>Conductor: <strong>${Number(stats.totalDriverPayout || 0).toLocaleString()}</strong></div>
-                <div>ACPM: <strong>${Number(stats.totalAcpmCost || 0).toLocaleString()}</strong></div>
-                <div>Ferry: <strong>${Number(stats.totalFerryCost || 0).toLocaleString()}</strong></div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Financial Summary for Print Only (Formal Accounting Table) */}
+      <div className="print-only mb-4">
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+          <thead>
+            <tr>
+              <th style={{ border: '1px solid #94a3b8', padding: '6px 10px', fontSize: '9.5px', backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: 'bold', textAlign: 'left', textTransform: 'uppercase' }}>Concepto de Balance</th>
+              <th style={{ border: '1px solid #94a3b8', padding: '6px 10px', fontSize: '9.5px', backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', textTransform: 'uppercase' }}>Ingresos Brutos (Flete)</th>
+              <th style={{ border: '1px solid #94a3b8', padding: '6px 10px', fontSize: '9.5px', backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', textTransform: 'uppercase' }}>Egresos Operativos Totales</th>
+              <th style={{ border: '1px solid #94a3b8', padding: '6px 10px', fontSize: '9.5px', backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', textTransform: 'uppercase' }}>Utilidad Neta del Ejercicio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ border: '1px solid #cbd5e1', padding: '8px 10px', fontSize: '10.5px', color: '#0f172a', fontWeight: '500' }}>Balance Consolidado del Periodo (COP)</td>
+              <td style={{ border: '1px solid #cbd5e1', padding: '8px 10px', fontSize: '10.5px', color: '#0f172a', textAlign: 'right', fontWeight: '500' }}>${Number(stats.totalBilling || 0).toLocaleString()}</td>
+              <td style={{ border: '1px solid #cbd5e1', padding: '8px 10px', fontSize: '10.5px', color: '#ef4444', textAlign: 'right', fontWeight: '500' }}>-${Number(stats.totalExpenses || 0).toLocaleString()}</td>
+              <td style={{ border: '1px solid #cbd5e1', padding: '8px 10px', fontSize: '10.5px', color: '#10b981', textAlign: 'right', fontWeight: 'bold' }}>${Number(stats.totalNet || 0).toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td colSpan="4" style={{ border: '1px solid #cbd5e1', padding: '6px 10px', fontSize: '8.5px', color: '#475569', backgroundColor: '#f8fafc', fontStyle: 'italic' }}>
+                <strong>Desglose Detallado de Egresos Auditados:</strong> 
+                Pago Neto Conductores: ${Number(stats.totalDriverPayout || 0).toLocaleString()} COP | 
+                Combustible ACPM Consumido: ${Number(stats.totalAcpmCost || 0).toLocaleString()} COP | 
+                Cruce de Ferrys y Peajes: ${Number(stats.totalFerryCost || 0).toLocaleString()} COP
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {/* Trips Table */}
@@ -391,7 +384,7 @@ const Finance = () => {
             overflow: visible !important;
             display: block !important;
             background-color: white !important;
-            color: #0f172a !important;
+            color: #000000 !important;
           }
           
           .no-print {
@@ -409,75 +402,16 @@ const Finance = () => {
             margin: 0 !important;
           }
           
-          /* Habilitar impresión de fondos coloreados de CSS */
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
           .print-card-wrapper {
-            border: 1px solid #e2e8f0 !important;
+            border: 1px solid #cbd5e1 !important;
             box-shadow: none !important;
-            border-radius: 8px !important;
+            border-radius: 4px !important;
             background-color: white !important;
             overflow: visible !important;
+            margin-top: 15px !important;
           }
           
-          /* Estructura Grid de Tarjetas de Resumen Financiero en Impresión */
-          .row-print-summary {
-            display: flex !important;
-            gap: 15px !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            margin-bottom: 25px !important;
-          }
-          
-          .col-print-4 {
-            flex: 1 !important;
-          }
-          
-          .print-summary-box {
-            border: 1px solid #e2e8f0 !important;
-            background-color: #f8fafc !important;
-            border-radius: 8px !important;
-            padding: 12px 14px !important;
-            box-sizing: border-box !important;
-            height: 100% !important;
-          }
-          
-          .border-left-primary { border-left: 4px solid #3b82f6 !important; }
-          .border-left-danger { border-left: 4px solid #ef4444 !important; }
-          .border-left-success { border-left: 4px solid #10b981 !important; }
-          .border-left-dark { border-left: 4px solid #1e293b !important; }
-          
-          .print-box-title {
-            display: block !important;
-            font-size: 10px !important;
-            text-transform: uppercase !important;
-            font-weight: 700 !important;
-            color: #64748b !important;
-          }
-          
-          .print-box-value {
-            font-size: 18px !important;
-            font-weight: 800 !important;
-            margin: 4px 0 2px 0 !important;
-          }
-          
-          .print-box-sub {
-            display: block !important;
-            font-size: 8.5px !important;
-            color: #94a3b8 !important;
-          }
-          
-          .print-box-details {
-            font-size: 9px !important;
-            margin-top: 4px !important;
-            color: #334155 !important;
-            line-height: 1.3 !important;
-          }
-          
-          /* Tabla Optimizada para Impresión de Múltiples Páginas */
+          /* Tabla Optimizada para Impresión de Múltiples Páginas y Austera */
           .table-responsive {
             overflow: visible !important;
             display: block !important;
@@ -499,28 +433,49 @@ const Finance = () => {
           }
           
           .table thead th {
-            background-color: #0f172a !important;
-            color: white !important;
-            font-size: 9px !important;
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            font-size: 8px !important;
             font-weight: 700 !important;
-            padding: 8px 6px !important;
-            border: 1px solid #334155 !important;
+            padding: 6px 4px !important;
+            border: 1px solid #94a3b8 !important;
+            text-transform: uppercase !important;
+            text-align: left !important;
+          }
+
+          .table thead th:last-child {
+            text-align: right !important;
           }
           
           .table tbody td {
-            font-size: 9px !important;
-            padding: 7px 6px !important;
-            border: 1px solid #e2e8f0 !important;
-            color: #1e293b !important;
+            font-size: 8px !important;
+            padding: 5px 4px !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+          }
+
+          .table tbody td:last-child {
+            text-align: right !important;
           }
           
           .table tbody tr:nth-child(even) td {
-            background-color: #f8fafc !important; /* Filas alternas */
+            background-color: #f8fafc !important; /* Filas alternas tenues */
+          }
+
+          /* Desactivar insignias coloreadas llamativas en favor de texto plano serio */
+          .table td .badge {
+            background-color: transparent !important;
+            color: #0f172a !important;
+            padding: 0 !important;
+            border: none !important;
+            font-size: 8px !important;
+            font-weight: normal !important;
           }
           
-          /* Firmas Auditables */
+          /* Firmas Auditables Austeras */
           .audit-signatures {
             page-break-inside: avoid !important;
+            margin-top: 50px !important;
           }
           
           .sig-box {
@@ -533,19 +488,19 @@ const Finance = () => {
           
           .sig-line {
             width: 180px !important;
-            border-top: 1px dashed #64748b !important;
+            border-top: 1px solid #475569 !important;
             margin-bottom: 6px !important;
           }
           
           .sig-title {
-            font-size: 10px !important;
+            font-size: 9px !important;
             font-weight: 700 !important;
-            color: #1e293b !important;
+            color: #0f172a !important;
           }
           
           .sig-desc {
-            font-size: 8.5px !important;
-            color: #64748b !important;
+            font-size: 8px !important;
+            color: #475569 !important;
           }
         }
         .print-only {
