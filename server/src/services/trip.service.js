@@ -41,18 +41,30 @@ export const createTrip = async (tripData, userId) => {
       throw new Error(`Producto no válido: ${tripData.producto}`);
     }
 
-    // 4. Crear el viaje
+    // 4. Calcular el pago al conductor (porcentaje del flete)
+    const pct = tripData.porcentajeConductor !== undefined && tripData.porcentajeConductor !== null 
+      ? Number(tripData.porcentajeConductor) 
+      : 1.00;
+    const valorConductor = valorPago * (pct / 100);
+
+    // 5. Crear el viaje
     const newTrip = await tx.trip.create({
       data: {
         ticket: Number(tripData.ticket),
         fecha: new Date(tripData.fecha),
         origen: tripData.origen,
+        destino: tripData.destino || null,
+        empresa: tripData.empresa || null,
         producto: tripData.producto,
         tipoPago: tripData.tipoPago || 'TRANSFERENCIA',
         tonelaje: tripData.tonelaje,
         valorPago: valorPago,
         consumoAcpm: tripData.consumoAcpm,
         usoFerry: tripData.usoFerry || false,
+        porcentajeConductor: pct,
+        valorConductor: valorConductor,
+        valorAcpm: tripData.valorAcpm !== undefined && tripData.valorAcpm !== null ? Number(tripData.valorAcpm) : 0.00,
+        valorFerry: tripData.valorFerry !== undefined && tripData.valorFerry !== null ? Number(tripData.valorFerry) : 0.00,
         driverId: tripData.driverId,
         vehicleId: tripData.vehicleId,
         registradoPorId: userId
@@ -155,7 +167,26 @@ export const updateTrip = async (id, updateData, userId) => {
       }
     }
 
-    // 3. Ejecutar actualización
+    // Convertir campos numéricos adicionales si vienen definidos
+    if (updateData.porcentajeConductor !== undefined && updateData.porcentajeConductor !== null) {
+      dataToUpdate.porcentajeConductor = Number(updateData.porcentajeConductor);
+    }
+    if (updateData.valorAcpm !== undefined && updateData.valorAcpm !== null) {
+      dataToUpdate.valorAcpm = Number(updateData.valorAcpm);
+    }
+    if (updateData.valorFerry !== undefined && updateData.valorFerry !== null) {
+      dataToUpdate.valorFerry = Number(updateData.valorFerry);
+    }
+
+    // 3. Recalcular el valor del conductor dinámicamente
+    const finalValorPago = dataToUpdate.valorPago !== undefined ? dataToUpdate.valorPago : Number(oldTrip.valorPago);
+    const finalPorcentaje = dataToUpdate.porcentajeConductor !== undefined 
+      ? (dataToUpdate.porcentajeConductor !== null ? Number(dataToUpdate.porcentajeConductor) : 1.00)
+      : Number(oldTrip.porcentajeConductor || 1.00);
+    
+    dataToUpdate.valorConductor = finalValorPago * (finalPorcentaje / 100);
+
+    // 4. Ejecutar actualización
     const updatedTrip = await tx.trip.update({
       where: { id },
       data: dataToUpdate,

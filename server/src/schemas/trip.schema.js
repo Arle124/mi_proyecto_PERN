@@ -6,12 +6,18 @@ export const tripSchema = z.object({
     if (typeof arg == "string" || arg instanceof Date) return new Date(arg);
   }, z.date({ invalid_type_error: "Fecha inválida" })),
   origen: z.string().min(1, 'El origen es obligatorio').max(150),
+  destino: z.string().max(150).optional().nullable(),
+  empresa: z.string().max(100).optional().nullable(),
   producto: z.enum(['FRUTO', 'COMPOST']),
   tipoPago: z.enum(['TRANSFERENCIA']).optional().default('TRANSFERENCIA'),
   tonelaje: z.number().positive('El tonelaje debe ser positivo'),
   valorPago: z.number().positive('El valor del pago debe ser positivo').optional().nullable(),
   consumoAcpm: z.number().nonnegative().optional().nullable(),
   usoFerry: z.boolean().optional().default(false),
+  porcentajeConductor: z.number().nonnegative().optional().nullable(),
+  valorConductor: z.number().nonnegative().optional().nullable(),
+  valorAcpm: z.number().nonnegative().optional().nullable(),
+  valorFerry: z.number().nonnegative().optional().nullable(),
   driverId: z.string().uuid('ID de conductor inválido'),
   vehicleId: z.string().uuid('ID de vehículo inválido'),
 });

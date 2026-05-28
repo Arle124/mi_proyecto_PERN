@@ -46,9 +46,33 @@ router.get('/report', adminMiddleware, async (req, res) => {
         if (trip.usoFerry) {
           acc.totalFerryCrossings += 1;
         }
+
+        // Sumar costos reales en COP
+        const driverVal = Number(trip.valorConductor || 0);
+        const acpmVal = Number(trip.valorAcpm || 0);
+        const ferryVal = Number(trip.valorFerry || 0);
+
+        acc.totalDriverPayout += driverVal;
+        acc.totalAcpmCost += acpmVal;
+        acc.totalFerryCost += ferryVal;
+
+        const tripExpenses = driverVal + acpmVal + ferryVal;
+        acc.totalExpenses += tripExpenses;
+        acc.totalNet += Number(trip.valorPago) - tripExpenses;
+
         return acc;
       },
-      { totalTons: 0, totalBilling: 0, totalAcpm: 0, totalFerryCrossings: 0 }
+      { 
+        totalTons: 0, 
+        totalBilling: 0, 
+        totalAcpm: 0, 
+        totalFerryCrossings: 0,
+        totalDriverPayout: 0,
+        totalAcpmCost: 0,
+        totalFerryCost: 0,
+        totalExpenses: 0,
+        totalNet: 0
+      }
     );
 
     res.json({
