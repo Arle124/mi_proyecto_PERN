@@ -94,7 +94,7 @@ async function main() {
 
   let currentTicket = 14500;
 
-  for (let i = 0; i < 50; i++) {
+  const createMockTrip = async (minDaysAgo, maxDaysAgo) => {
     const driver = drivers[Math.floor(Math.random() * drivers.length)];
     const vehicle = vehicles[Math.floor(Math.random() * vehicles.length)];
     
@@ -124,8 +124,8 @@ async function main() {
     const usoFerry = Math.random() < 0.3; // 30% probabilidad
     const valorFerry = usoFerry ? (Math.round((Math.random() * 70000 + 180000) / 1000) * 1000) : 0;
     
-    // Fecha distribuida en los últimos 30 días
-    const daysAgo = Math.floor(Math.random() * 30);
+    // Fecha distribuida en el rango de días especificado
+    const daysAgo = Math.floor(Math.random() * (maxDaysAgo - minDaysAgo + 1)) + minDaysAgo;
     const date = new Date();
     date.setDate(date.getDate() - daysAgo);
     
@@ -150,9 +150,27 @@ async function main() {
         registradoPorId: operator.id
       }
     });
+  };
+
+  // Generar bloque 1: 50 viajes en el mes actual (últimos 30 días)
+  console.log('📅 Generando 50 viajes para el mes actual (últimos 30 días)...');
+  for (let i = 0; i < 50; i++) {
+    await createMockTrip(0, 29);
   }
 
-  console.log('✅ Base de datos saneada y 50 viajes coherentes registrados exitosamente.');
+  // Generar bloque 2: 20 viajes para el mes anterior (días 30 a 59)
+  console.log('📅 Generando 20 viajes para el mes anterior (días 30 a 59)...');
+  for (let i = 0; i < 20; i++) {
+    await createMockTrip(30, 59);
+  }
+
+  // Generar bloque 3: 15 viajes para el mes ante-anterior (días 60 a 89)
+  console.log('📅 Generando 15 viajes para hace dos meses (días 60 a 89)...');
+  for (let i = 0; i < 15; i++) {
+    await createMockTrip(60, 89);
+  }
+
+  console.log('✅ Base de datos saneada y 85 viajes históricos coherentes registrados exitosamente.');
 }
 
 main()
