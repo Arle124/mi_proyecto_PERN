@@ -56,7 +56,6 @@ export const createTrip = async (tripData, userId) => {
         destino: tripData.destino || null,
         empresa: tripData.empresa || null,
         producto: tripData.producto,
-        tipoPago: tripData.tipoPago || 'TRANSFERENCIA',
         tonelaje: tripData.tonelaje,
         valorPago: valorPago,
         consumoAcpm: tripData.consumoAcpm,

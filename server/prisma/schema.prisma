@@ -25,10 +25,6 @@ enum ProductType {
   COMPOST
 }
 
-enum PaymentType {
-  TRANSFERENCIA
-}
-
 enum AuditAction {
   CREATE
   UPDATE
@@ -143,7 +139,6 @@ model Trip {
   fecha            DateTime
   origen           String      @db.VarChar(150)
   producto         ProductType
-  tipoPago         PaymentType @default(TRANSFERENCIA)
 
   tonelaje         Decimal     @db.Decimal(10, 3)
   valorPago        Decimal     @db.Decimal(12, 2)

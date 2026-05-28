@@ -22,7 +22,6 @@ const Trips = ({ isDashboard = false }) => {
     destino: '',
     empresa: '',
     producto: 'FRUTO',
-    tipoPago: 'TRANSFERENCIA',
     tonelaje: '',
     valorPago: '', // Manual para COMPOST
     driverId: '',
@@ -79,6 +78,15 @@ const Trips = ({ isDashboard = false }) => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
+    if (name === 'usoFerry') {
+      setFormData({
+        ...formData,
+        usoFerry: checked,
+        valorFerry: checked ? formData.valorFerry : ''
+      });
+      return;
+    }
+
     if (name === 'ticket') {
       // Sanitización estricta de ticket: remueve cualquier carácter no numérico (\D).
       // Impide físicamente guiones, signos +, letras o espacios en vivo.
@@ -157,7 +165,6 @@ const Trips = ({ isDashboard = false }) => {
         destino: formData.destino || null,
         empresa: formData.empresa || null,
         producto: formData.producto,
-        tipoPago: formData.tipoPago,
         tonelaje: parseFloat(formData.tonelaje),
         consumoAcpm: parseFloat(formData.consumoAcpm) || 0,
         usoFerry: formData.usoFerry,
@@ -184,7 +191,6 @@ const Trips = ({ isDashboard = false }) => {
         destino: '',
         empresa: '',
         producto: 'FRUTO',
-        tipoPago: 'TRANSFERENCIA',
         tonelaje: '',
         valorPago: '',
         driverId: '',
@@ -410,17 +416,11 @@ const Trips = ({ isDashboard = false }) => {
                       </select>
                     </div>
 
-                    <div className="col-md-6">
+                    <div className="col-md-12">
                       <label className="form-label small fw-bold">Producto Transportado *</label>
                       <select name="producto" className="form-select" value={formData.producto} onChange={handleInputChange} required>
                         <option value="FRUTO">FRUTO (Fruta de Palma)</option>
                         <option value="COMPOST">COMPOST (Abono orgánico)</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label small fw-bold">Tipo de Pago *</label>
-                      <select name="tipoPago" className="form-select" value={formData.tipoPago} onChange={handleInputChange} required disabled>
-                        <option value="TRANSFERENCIA">TRANSFERENCIA bancaria (Requerido DIAN)</option>
                       </select>
                     </div>
 
@@ -494,9 +494,10 @@ const Trips = ({ isDashboard = false }) => {
                           onKeyDown={handleKeyDownPositive}
                           name="valorFerry" 
                           className="form-control" 
-                          placeholder="Ej: 220000" 
+                          placeholder={formData.usoFerry ? "Ej: 220000" : "Bloqueado (Active Ferry)"} 
                           value={formData.valorFerry} 
                           onChange={handleInputChange} 
+                          disabled={!formData.usoFerry}
                         />
                       </div>
                     </div>
