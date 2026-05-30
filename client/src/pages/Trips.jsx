@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, Save, AlertCircle, X } from 'lucide-react';
+import { Plus, Save, AlertCircle, X, Edit, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 // Formateador de moneda estilo colombiano (separador de miles con punto)
 const formatCurrencyCOP = (val) => {
@@ -30,12 +31,15 @@ const getInitialFormData = () => ({
 });
 
 const Trips = ({ isDashboard = false }) => {
+  const { isAdmin } = useAuth();
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Estado del formulario
   const [formData, setFormData] = useState(getInitialFormData());
@@ -160,6 +164,61 @@ const Trips = ({ isDashboard = false }) => {
     return parseFloat(formData.valorPago) || 0;
   };
 
+  const handleOpenCreateModal = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setError('');
+    setFormData(getInitialFormData());
+    setShowModal(true);
+  };
+
+  const handleEditClick = (trip) => {
+    setIsEditing(true);
+    setEditingId(trip.id);
+    setError('');
+    
+    // UI almacena en kilogramos, BD en toneladas (tons * 1000)
+    const tons = Number(trip.tonelaje) || 0;
+    const kg = Math.round(tons * 1000);
+    
+    // Obtener precio por kilo para pre-poblar
+    let calculatedPriceKg = '100';
+    if (trip.producto === 'FRUTO' && kg > 0) {
+      calculatedPriceKg = Math.round(Number(trip.valorPago) / kg).toString();
+    }
+
+    setFormData({
+      ticket: trip.ticket.toString(),
+      fecha: new Date(trip.fecha).toISOString().split('T')[0],
+      origen: trip.origen,
+      destino: trip.destino || '',
+      empresa: trip.empresa || '',
+      producto: trip.producto,
+      tonelaje: kg.toString(),
+      valorPago: trip.valorPago.toString(),
+      precioKg: calculatedPriceKg,
+      driverId: trip.driverId,
+      vehicleId: trip.vehicleId,
+      consumoAcpm: trip.consumoAcpm ? trip.consumoAcpm.toString() : '0',
+      usoFerry: trip.usoFerry || false,
+      porcentajeConductor: trip.porcentajeConductor ? trip.porcentajeConductor.toString() : '1.00',
+      valorAcpm: trip.valorAcpm ? trip.valorAcpm.toString() : '0',
+      valorFerry: trip.valorFerry ? trip.valorFerry.toString() : '0'
+    });
+    
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta planilla de viaje? Esta acción es irreversible y liberará el vehículo.')) return;
+    try {
+      await api.delete(`/viajes/${id}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al eliminar el viaje');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -172,7 +231,6 @@ const Trips = ({ isDashboard = false }) => {
         destino: formData.destino || null,
         empresa: formData.empresa || null,
         producto: formData.producto,
-        // UI almacena kilogramos, pero la base de datos registra en toneladas (Tons = kg / 1000)
         tonelaje: parseFloat(formData.tonelaje) / 1000,
         consumoAcpm: parseFloat(formData.consumoAcpm) || 0,
         usoFerry: formData.usoFerry,
@@ -185,14 +243,19 @@ const Trips = ({ isDashboard = false }) => {
 
       payload.valorPago = getCalculatedPayment();
       
-      await api.post('/viajes', payload);
-      setShowModal(false);
-      fetchData(); // Recargar lista
+      if (isEditing) {
+        await api.put(`/viajes/${editingId}`, payload);
+      } else {
+        await api.post('/viajes', payload);
+      }
       
-      // Reset form
+      setShowModal(false);
+      fetchData();
+      setIsEditing(false);
+      setEditingId(null);
       setFormData(getInitialFormData());
     } catch (error) {
-      setError(error.response?.data?.error || 'Error al registrar el viaje');
+      setError(error.response?.data?.error || 'Error al guardar el viaje');
     }
   };
 
@@ -207,7 +270,7 @@ const Trips = ({ isDashboard = false }) => {
         {!isDashboard && (
           <button 
             className="btn btn-primary d-flex align-items-center gap-2"
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenCreateModal}
           >
             <Plus size={20} /> Nuevo Viaje
           </button>
@@ -232,19 +295,20 @@ const Trips = ({ isDashboard = false }) => {
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Pago Cond.</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Gastos</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Margen Neto</th>
+                {isAdmin() && <th className="py-3 text-secondary small text-uppercase fw-bold text-end pe-4">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="12" className="text-center py-5">
+                  <td colSpan={isAdmin() ? 13 : 12} className="text-center py-5">
                     <div className="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                     Cargando viajes registrados...
                   </td>
                 </tr>
               ) : trips.length === 0 ? (
                 <tr>
-                  <td colSpan="12" className="text-center py-5 text-muted">No se encontraron registros de viajes.</td>
+                  <td colSpan={isAdmin() ? 13 : 12} className="text-center py-5 text-muted">No se encontraron registros de viajes.</td>
                 </tr>
               ) : (
                 trips.map((trip) => {
@@ -279,6 +343,24 @@ const Trips = ({ isDashboard = false }) => {
                       <td className={`fw-bold small ${netUtility >= 0 ? 'text-success' : 'text-danger'}`}>
                         ${netUtility.toLocaleString()}
                       </td>
+                      {isAdmin() && (
+                        <td className="text-end pe-4">
+                          <button 
+                            className="btn btn-link text-primary p-0 me-3" 
+                            onClick={() => handleEditClick(trip)} 
+                            title="Editar Viaje"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button 
+                            className="btn btn-link text-danger p-0" 
+                            onClick={() => handleDelete(trip.id)} 
+                            title="Eliminar Viaje"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -295,7 +377,8 @@ const Trips = ({ isDashboard = false }) => {
             <div className="modal-content border-0 shadow-lg">
               <div className="modal-header bg-primary text-white">
                 <h5 className="modal-title d-flex align-items-center gap-2">
-                  <Plus size={20} /> Registrar Nueva Planilla de Viaje
+                  {isEditing ? <Edit size={20} /> : <Plus size={20} />} 
+                  {isEditing ? 'Editar Planilla de Viaje' : 'Registrar Nueva Planilla de Viaje'}
                 </h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
               </div>
