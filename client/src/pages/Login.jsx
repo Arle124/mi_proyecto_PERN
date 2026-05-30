@@ -30,12 +30,13 @@ const Login = () => {
   return (
     <div className="container-fluid vh-100 d-flex align-items-center justify-content-center bg-light">
       <div className="card p-4 shadow-lg" style={{ maxWidth: '400px', width: '100%' }}>
-        <div className="text-center mb-4">
-          <div className="bg-primary d-inline-block p-3 rounded-circle mb-3">
-            <LogIn size={32} color="white" />
-          </div>
-          <h2 className="fw-bold">Novapalma</h2>
-          <p className="text-muted">Gestión Logística Inteligente</p>
+        <div className="text-center mb-2">
+          <img 
+            src="/logo.png" 
+            alt="Novapalma Logo" 
+            style={{ width: '220px', height: '220px', objectFit: 'contain' }} 
+            className="mb-1"
+          />
         </div>
 
         {error && (
