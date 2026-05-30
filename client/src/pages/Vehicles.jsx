@@ -98,14 +98,14 @@ const Vehicles = () => {
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Marca / Modelo</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Capacidad</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Estado</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold text-end pe-4">Acciones</th>
+                {isAdmin() && <th className="py-3 text-secondary small text-uppercase fw-bold text-end pe-4">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="5" className="text-center py-5">Cargando flota...</td></tr>
+                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5">Cargando flota...</td></tr>
               ) : vehicles.length === 0 ? (
-                <tr><td colSpan="5" className="text-center py-5 text-muted">No hay vehículos registrados.</td></tr>
+                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5 text-muted">No hay vehículos registrados.</td></tr>
               ) : (
                 vehicles.map((v) => (
                   <tr key={v.id}>
@@ -120,13 +120,13 @@ const Vehicles = () => {
                         {v.estado}
                       </span>
                     </td>
-                    <td className="text-end pe-4">
-                      {isAdmin() && (
+                    {isAdmin() && (
+                      <td className="text-end pe-4">
                         <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(v.id)}>
                           <Trash2 size={18} />
                         </button>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

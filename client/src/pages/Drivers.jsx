@@ -87,14 +87,14 @@ const Drivers = () => {
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Nombre Completo</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Teléfono</th>
                 <th className="py-3 text-secondary small text-uppercase fw-bold">Estado</th>
-                <th className="py-3 text-secondary small text-uppercase fw-bold text-end pe-4">Acciones</th>
+                {isAdmin() && <th className="py-3 text-secondary small text-uppercase fw-bold text-end pe-4">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="5" className="text-center py-5">Cargando conductores...</td></tr>
+                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5">Cargando conductores...</td></tr>
               ) : drivers.length === 0 ? (
-                <tr><td colSpan="5" className="text-center py-5 text-muted">No hay conductores registrados.</td></tr>
+                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5 text-muted">No hay conductores registrados.</td></tr>
               ) : (
                 drivers.map((d) => (
                   <tr key={d.id}>
@@ -106,13 +106,13 @@ const Drivers = () => {
                         {d.activo ? 'ACTIVO' : 'INACTIVO'}
                       </span>
                     </td>
-                    <td className="text-end pe-4">
-                      {isAdmin() && (
+                    {isAdmin() && (
+                      <td className="text-end pe-4">
                         <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(d.id)}>
                           <Trash2 size={18} />
                         </button>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
