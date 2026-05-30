@@ -19,8 +19,28 @@ const app = express();
 app.use(helmet());
 
 // 2. CORS: Restringe el acceso a orígenes conocidos.
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://mi-proyecto-pern.vercel.app'
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Permitir llamadas sin origen (como postman, curl o herramientas internas)
+    if (!origin) return callback(null, true);
+    
+    // Si coincide con permitidos, o es desarrollo local o coincide con variable de entorno
+    if (
+      allowedOrigins.includes(origin) || 
+      origin === process.env.CLIENT_URL || 
+      process.env.NODE_ENV !== 'production'
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error('Bloqueado por políticas CORS de Novapalma'));
+    }
+  },
   credentials: true // Crucial para permitir el envío de HttpOnly Cookies
 }));
 
