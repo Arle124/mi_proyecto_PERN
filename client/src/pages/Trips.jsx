@@ -20,6 +20,7 @@ const Trips = ({ isDashboard = false }) => {
     producto: 'FRUTO',
     tonelaje: '',
     valorPago: '', // Manual para COMPOST
+    precioKg: '',  // Autocalculado para FRUTO
     driverId: '',
     vehicleId: '',
     consumoAcpm: 0,
@@ -88,6 +89,7 @@ const Trips = ({ isDashboard = false }) => {
       name === 'tonelaje' || 
       name === 'consumoAcpm' || 
       name === 'valorPago' || 
+      name === 'precioKg' || 
       name === 'porcentajeConductor' || 
       name === 'valorAcpm' || 
       name === 'valorFerry'
@@ -126,10 +128,16 @@ const Trips = ({ isDashboard = false }) => {
   };
 
   /**
-   * OBTENCIÓN DEL VALOR PAGO PACTADO (MANUAL)
-   * En Novapalma, todas las tarifas de fletes son ingresadas de forma manual.
+   * OBTENCIÓN DEL VALOR PAGO PACTADO (AUTOMÁTICO O MANUAL)
+   * Para FRUTO se calcula dinámicamente multiplicando Tons * 1000 * precioKg.
+   * Para COMPOST se ingresa de forma manual.
    */
   const getCalculatedPayment = () => {
+    if (formData.producto === 'FRUTO') {
+      const tons = parseFloat(formData.tonelaje) || 0;
+      const priceKg = parseFloat(formData.precioKg) || 0;
+      return Math.round(tons * 1000 * priceKg);
+    }
     return parseFloat(formData.valorPago) || 0;
   };
 
@@ -155,7 +163,7 @@ const Trips = ({ isDashboard = false }) => {
         vehicleId: formData.vehicleId,
       };
 
-      payload.valorPago = parseFloat(formData.valorPago) || 0;
+      payload.valorPago = getCalculatedPayment();
       
       await api.post('/viajes', payload);
       setShowModal(false);
@@ -171,6 +179,7 @@ const Trips = ({ isDashboard = false }) => {
         producto: 'FRUTO',
         tonelaje: '',
         valorPago: '',
+        precioKg: '',
         driverId: '',
         vehicleId: '',
         consumoAcpm: 0,
@@ -485,26 +494,70 @@ const Trips = ({ isDashboard = false }) => {
                       <div className="row g-3">
                         <div className="col-md-6">
                           <div>
-                            <span className="badge bg-primary mb-1">PRECIO MANUAL ESTIPULADO</span>
-                            <h6 className="m-0 fw-bold mb-1">Valor de Flete Pactado</h6>
-                            <p className="text-muted small mb-2">Las tarifas se calculan de forma manual y se ingresan directamente al sistema.</p>
-                            <div className="mt-2">
-                              <label className="form-label small fw-bold text-primary">Costo Flete Pactado (COP) *</label>
-                              <div className="input-group">
-                                <span className="input-group-text">$</span>
-                                <input 
-                                  type="number" 
-                                  min="0"
-                                  onKeyDown={handleKeyDownPositive}
-                                  name="valorPago" 
-                                  className="form-control fw-bold text-end" 
-                                  placeholder="Ej: 450000" 
-                                  value={formData.valorPago} 
-                                  onChange={handleInputChange} 
-                                  required 
-                                />
-                              </div>
-                            </div>
+                            {formData.producto === 'FRUTO' ? (
+                              <>
+                                <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO POR KG</span>
+                                <h6 className="m-0 fw-bold mb-1">Precio por Kilogramo (Fruta)</h6>
+                                <p className="text-muted small mb-2">Las tarifas se calculan multiplicando los kilogramos por el precio del viaje.</p>
+                                <div className="mt-2">
+                                  <label className="form-label small fw-bold text-success">Precio por Kg de Fruta (COP) *</label>
+                                  <div className="input-group mb-2">
+                                    <span className="input-group-text bg-success text-white">$</span>
+                                    <input 
+                                      type="number" 
+                                      min="0"
+                                      step="0.01"
+                                      onKeyDown={handleKeyDownPositive}
+                                      name="precioKg" 
+                                      className="form-control fw-bold text-end" 
+                                      placeholder="Ej: 130" 
+                                      value={formData.precioKg} 
+                                      onChange={handleInputChange} 
+                                      required={formData.producto === 'FRUTO'}
+                                    />
+                                    <span className="input-group-text bg-light text-muted">/ kg</span>
+                                  </div>
+                                  
+                                  <div className="bg-white p-2 rounded border border-light-subtle small mt-2">
+                                    <div className="d-flex justify-content-between mb-1">
+                                      <span className="text-muted">Conversión a Kg:</span>
+                                      <span className="fw-semibold text-dark">
+                                        {(parseFloat(formData.tonelaje) || 0).toLocaleString()} Tons = {Math.round((parseFloat(formData.tonelaje) || 0) * 1000).toLocaleString()} kg
+                                      </span>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                      <span className="text-muted fw-bold">Valor de Flete Total:</span>
+                                      <span className="badge bg-success-subtle text-success fw-bold fs-6">
+                                        ${Number(getCalculatedPayment()).toLocaleString()} COP
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <span className="badge bg-primary mb-1">PRECIO MANUAL ESTIPULADO</span>
+                                <h6 className="m-0 fw-bold mb-1">Valor de Flete Pactado</h6>
+                                <p className="text-muted small mb-2">Las tarifas se calculan de forma manual y se ingresan directamente al sistema.</p>
+                                <div className="mt-2">
+                                  <label className="form-label small fw-bold text-primary">Costo Flete Pactado (COP) *</label>
+                                  <div className="input-group">
+                                    <span className="input-group-text">$</span>
+                                    <input 
+                                      type="number" 
+                                      min="0"
+                                      onKeyDown={handleKeyDownPositive}
+                                      name="valorPago" 
+                                      className="form-control fw-bold text-end" 
+                                      placeholder="Ej: 450000" 
+                                      value={formData.valorPago} 
+                                      onChange={handleInputChange} 
+                                      required={formData.producto === 'COMPOST'}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
 
