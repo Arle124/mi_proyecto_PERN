@@ -1,4 +1,5 @@
 import * as vehicleService from '../services/vehicle.service.js';
+import { formatError } from '../utils/errorHandler.js';
 
 /**
  * ============================================================
@@ -19,7 +20,8 @@ export const create = async (req, res) => {
     const vehicle = await vehicleService.createVehicle(req.body, req.user.id);
     res.status(201).json(vehicle);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const { status, message } = formatError(error);
+    res.status(status).json({ error: message });
   }
 };
 
@@ -33,7 +35,8 @@ export const getAll = async (req, res) => {
     const vehicles = await vehicleService.getAllVehicles();
     res.json(vehicles);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const { status, message } = formatError(error);
+    res.status(status).json({ error: message });
   }
 };
 
@@ -48,7 +51,8 @@ export const getById = async (req, res) => {
     if (!vehicle) return res.status(404).json({ error: 'Vehículo no encontrado' });
     res.json(vehicle);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const { status, message } = formatError(error);
+    res.status(status).json({ error: message });
   }
 };
 
@@ -63,7 +67,8 @@ export const update = async (req, res) => {
     const vehicle = await vehicleService.updateVehicle(req.params.id, req.body, req.user.id);
     res.json(vehicle);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const { status, message } = formatError(error);
+    res.status(status).json({ error: message });
   }
 };
 
@@ -78,7 +83,8 @@ export const remove = async (req, res) => {
     const vehicle = await vehicleService.deleteVehicle(req.params.id, req.user.id);
     res.json({ message: 'Vehículo eliminado (Soft Delete)', vehicle });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const { status, message } = formatError(error);
+    res.status(status).json({ error: message });
   }
 };
 

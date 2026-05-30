@@ -1,4 +1,5 @@
 import * as authService from '../services/auth.service.js';
+import { formatError } from '../utils/errorHandler.js';
 
 /**
  * ============================================================
@@ -41,7 +42,10 @@ export const login = async (req, res) => {
     res.json({ user });
   } catch (error) {
     console.warn(`⚠️ Intento de login fallido para: ${correo} desde IP: ${ipAddress}`);
-    res.status(401).json({ error: error.message });
+    const { status, message } = formatError(error);
+    // Conservamos status 401 para credenciales inválidas, de lo contrario usamos el status del formateador (ej. 503 si DB está caída)
+    const finalStatus = error.message.includes('inválidas') || error.message.includes('encontrado') ? 401 : status;
+    res.status(finalStatus).json({ error: message });
   }
 };
 
