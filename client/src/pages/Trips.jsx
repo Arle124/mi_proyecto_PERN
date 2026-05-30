@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Plus, Save, AlertCircle, X } from 'lucide-react';
 
+// Formateador de moneda estilo colombiano (separador de miles con punto)
+const formatCurrencyCOP = (val) => {
+  if (val === undefined || val === null || val === '') return '';
+  const stringVal = val.toString().replace(/\D/g, '');
+  if (!stringVal) return '';
+  return Number(stringVal).toLocaleString('de-DE');
+};
+
 const Trips = ({ isDashboard = false }) => {
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -18,9 +26,9 @@ const Trips = ({ isDashboard = false }) => {
     destino: '',
     empresa: '',
     producto: 'FRUTO',
-    tonelaje: '',
-    valorPago: '', // Manual para COMPOST
-    precioKg: '',  // Autocalculado para FRUTO
+    tonelaje: '',   // Ingresado en KILOGRAMOS en la UI, guardado en TONELADAS en la BD
+    valorPago: '',  // Manual para COMPOST
+    precioTon: '',  // Pago por TONELADA para FRUTO
     driverId: '',
     vehicleId: '',
     consumoAcpm: 0,
@@ -88,17 +96,10 @@ const Trips = ({ isDashboard = false }) => {
     if (
       name === 'tonelaje' || 
       name === 'consumoAcpm' || 
-      name === 'valorPago' || 
-      name === 'precioKg' || 
-      name === 'porcentajeConductor' || 
-      name === 'valorAcpm' || 
-      name === 'valorFerry'
+      name === 'porcentajeConductor'
     ) {
-      // Sanitización para inputs numéricos flotantes:
-      // 1. Elimina guiones negativos (prevención de fletes negativos).
+      // Sanitización para entradas numéricas decimales o enteras (kg, galones, porcentaje)
       let cleanedValue = value.replace(/-/g, '');
-      
-      // 2. Si el valor ingresado es menor a 0, lo resetea a 0
       if (cleanedValue !== '' && parseFloat(cleanedValue) < 0) {
         cleanedValue = '0';
       }
@@ -106,6 +107,21 @@ const Trips = ({ isDashboard = false }) => {
       setFormData({
         ...formData,
         [name]: cleanedValue
+      });
+      return;
+    }
+
+    if (
+      name === 'valorPago' || 
+      name === 'precioTon' || 
+      name === 'valorAcpm' || 
+      name === 'valorFerry'
+    ) {
+      // Sanitización para valores monetarios (solo dígitos enteros)
+      const digitsOnly = value.replace(/\D/g, '');
+      setFormData({
+        ...formData,
+        [name]: digitsOnly
       });
       return;
     }
@@ -134,9 +150,10 @@ const Trips = ({ isDashboard = false }) => {
    */
   const getCalculatedPayment = () => {
     if (formData.producto === 'FRUTO') {
-      const tons = parseFloat(formData.tonelaje) || 0;
-      const priceKg = parseFloat(formData.precioKg) || 0;
-      return Math.round(tons * 1000 * priceKg);
+      const kg = parseFloat(formData.tonelaje) || 0;
+      const priceTon = parseFloat(formData.precioTon) || 0;
+      // kg / 1000 da el tonelaje equivalente. Flete = Tons * PrecioPorTon
+      return Math.round((kg / 1000) * priceTon);
     }
     return parseFloat(formData.valorPago) || 0;
   };
@@ -153,7 +170,8 @@ const Trips = ({ isDashboard = false }) => {
         destino: formData.destino || null,
         empresa: formData.empresa || null,
         producto: formData.producto,
-        tonelaje: parseFloat(formData.tonelaje),
+        // UI almacena kilogramos, pero la base de datos registra en toneladas (Tons = kg / 1000)
+        tonelaje: parseFloat(formData.tonelaje) / 1000,
         consumoAcpm: parseFloat(formData.consumoAcpm) || 0,
         usoFerry: formData.usoFerry,
         porcentajeConductor: parseFloat(formData.porcentajeConductor) || 1.00,
@@ -179,7 +197,7 @@ const Trips = ({ isDashboard = false }) => {
         producto: 'FRUTO',
         tonelaje: '',
         valorPago: '',
-        precioKg: '',
+        precioTon: '',
         driverId: '',
         vehicleId: '',
         consumoAcpm: 0,
@@ -412,15 +430,15 @@ const Trips = ({ isDashboard = false }) => {
                     </div>
 
                     <div className="col-md-4">
-                      <label className="form-label small fw-bold">Tonelaje Real (Tons) *</label>
+                      <label className="form-label small fw-bold">Kilogramos Reales (kg) *</label>
                       <input 
                         type="number" 
-                        step="0.001" 
+                        step="1" 
                         min="0"
                         onKeyDown={handleKeyDownPositive}
                         name="tonelaje" 
-                        className="form-control" 
-                        placeholder="Ej: 8.540" 
+                        className="form-control fw-bold" 
+                        placeholder="Ej: 8540" 
                         value={formData.tonelaje} 
                         onChange={handleInputChange} 
                         required 
@@ -460,13 +478,11 @@ const Trips = ({ isDashboard = false }) => {
                       <div className="input-group">
                         <span className="input-group-text">$</span>
                         <input 
-                          type="number" 
-                          min="0"
-                          onKeyDown={handleKeyDownPositive}
+                          type="text" 
                           name="valorAcpm" 
-                          className="form-control" 
-                          placeholder="Ej: 349291" 
-                          value={formData.valorAcpm} 
+                          className="form-control text-end fw-semibold" 
+                          placeholder="Ej: 349.291" 
+                          value={formatCurrencyCOP(formData.valorAcpm)} 
                           onChange={handleInputChange} 
                         />
                       </div>
@@ -476,13 +492,11 @@ const Trips = ({ isDashboard = false }) => {
                       <div className="input-group">
                         <span className="input-group-text">$</span>
                         <input 
-                          type="number" 
-                          min="0"
-                          onKeyDown={handleKeyDownPositive}
+                          type="text" 
                           name="valorFerry" 
-                          className="form-control" 
-                          placeholder={formData.usoFerry ? "Ej: 220000" : "Bloqueado (Active Ferry)"} 
-                          value={formData.valorFerry} 
+                          className="form-control text-end fw-semibold" 
+                          placeholder={formData.usoFerry ? "Ej: 220.000" : "Bloqueado (Active Ferry)"} 
+                          value={formatCurrencyCOP(formData.valorFerry)} 
                           onChange={handleInputChange} 
                           disabled={!formData.usoFerry}
                         />
@@ -496,36 +510,39 @@ const Trips = ({ isDashboard = false }) => {
                           <div>
                             {formData.producto === 'FRUTO' ? (
                               <>
-                                <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO POR KG</span>
-                                <h6 className="m-0 fw-bold mb-1">Precio por Kilogramo (Fruta)</h6>
-                                <p className="text-muted small mb-2">Las tarifas se calculan multiplicando los kilogramos por el precio del viaje.</p>
+                                <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO (KG &rarr; TONS)</span>
+                                <h6 className="m-0 fw-bold mb-1">Precio por Tonelada (Fruta)</h6>
+                                <p className="text-muted small mb-2">Las tarifas se pagan por tonelada, ingresando el peso recibido en kilogramos.</p>
                                 <div className="mt-2">
-                                  <label className="form-label small fw-bold text-success">Precio por Kg de Fruta (COP) *</label>
+                                  <label className="form-label small fw-bold text-success">Precio por Tonelada de Fruta (COP) *</label>
                                   <div className="input-group mb-2">
                                     <span className="input-group-text bg-success text-white">$</span>
                                     <input 
-                                      type="number" 
-                                      min="0"
-                                      step="0.01"
-                                      onKeyDown={handleKeyDownPositive}
-                                      name="precioKg" 
+                                      type="text" 
+                                      name="precioTon" 
                                       className="form-control fw-bold text-end" 
-                                      placeholder="Ej: 130" 
-                                      value={formData.precioKg} 
+                                      placeholder="Ej: 130.000" 
+                                      value={formatCurrencyCOP(formData.precioTon)} 
                                       onChange={handleInputChange} 
                                       required={formData.producto === 'FRUTO'}
                                     />
-                                    <span className="input-group-text bg-light text-muted">/ kg</span>
+                                    <span className="input-group-text bg-light text-muted">/ Ton</span>
                                   </div>
                                   
                                   <div className="bg-white p-2 rounded border border-light-subtle small mt-2">
                                     <div className="d-flex justify-content-between mb-1">
-                                      <span className="text-muted">Conversión a Kg:</span>
+                                      <span className="text-muted">Cantidad a facturar:</span>
                                       <span className="fw-semibold text-dark">
-                                        {(parseFloat(formData.tonelaje) || 0).toLocaleString()} Tons = {Math.round((parseFloat(formData.tonelaje) || 0) * 1000).toLocaleString()} kg
+                                        {Number(formData.tonelaje || 0).toLocaleString()} kg = {((parseFloat(formData.tonelaje) || 0) / 1000).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} Tons
                                       </span>
                                     </div>
-                                    <div className="d-flex justify-content-between align-items-center">
+                                    <div className="d-flex justify-content-between mb-1">
+                                      <span className="text-muted">Precio por Tonelada:</span>
+                                      <span className="fw-semibold text-dark">
+                                        ${formatCurrencyCOP(formData.precioTon)} COP
+                                      </span>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
                                       <span className="text-muted fw-bold">Valor de Flete Total:</span>
                                       <span className="badge bg-success-subtle text-success fw-bold fs-6">
                                         ${Number(getCalculatedPayment()).toLocaleString()} COP
@@ -544,13 +561,11 @@ const Trips = ({ isDashboard = false }) => {
                                   <div className="input-group">
                                     <span className="input-group-text">$</span>
                                     <input 
-                                      type="number" 
-                                      min="0"
-                                      onKeyDown={handleKeyDownPositive}
+                                      type="text" 
                                       name="valorPago" 
                                       className="form-control fw-bold text-end" 
-                                      placeholder="Ej: 450000" 
-                                      value={formData.valorPago} 
+                                      placeholder="Ej: 450.000" 
+                                      value={formatCurrencyCOP(formData.valorPago)} 
                                       onChange={handleInputChange} 
                                       required={formData.producto === 'COMPOST'}
                                     />
