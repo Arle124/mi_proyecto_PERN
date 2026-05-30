@@ -1,4 +1,5 @@
 import * as authService from '../services/auth.service.js';
+import * as userService from '../services/user.service.js';
 import { formatError } from '../utils/errorHandler.js';
 
 /**
@@ -58,4 +59,20 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   res.clearCookie('token');
   res.json({ message: 'Sesión finalizada correctamente' });
+};
+
+/**
+ * @route   PUT /api/auth/perfil
+ * @desc    Permite a cualquier usuario autenticado actualizar su propio perfil y contraseña
+ * @access  Privado (ADMIN, OPERADOR)
+ */
+export const updateProfile = async (req, res) => {
+  try {
+    // El usuario logueado req.user.id solo puede actualizar su propia cuenta
+    const user = await userService.updateUser(req.user.id, req.body, req.user.id);
+    res.json({ user });
+  } catch (error) {
+    const { status, message } = formatError(error);
+    res.status(status).json({ error: message });
+  }
 };

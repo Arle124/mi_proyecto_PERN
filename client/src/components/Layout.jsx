@@ -13,7 +13,8 @@ import {
   Sun,
   Moon,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 
 /**
@@ -81,6 +82,9 @@ const Layout = ({ children }) => {
           </NavLink>
           <NavLink to="/vehiculos" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
             <Truck size={20} /> Vehículos
+          </NavLink>
+          <NavLink to="/settings" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
+            <Settings size={20} /> Configuración
           </NavLink>
           {isAdmin() && (
             <>

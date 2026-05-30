@@ -8,6 +8,8 @@ const Vehicles = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const { isAdmin } = useAuth();
   
   const [formData, setFormData] = useState({
@@ -36,43 +38,64 @@ const Vehicles = () => {
 
   /**
    * MANEJADORES DE OPERACIONES DE LA FLOTA
-   * - handleInputChange: Captura cambios en campos normales de texto.
-   * - handleSubmit: Parsea la capacidad flotante y envía al backend (normaliza placa a mayúsculas).
-   * - handleDelete: Dispara la baja lógica (Soft Delete) del vehículo en base de datos.
    */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleOpenCreateModal = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setError('');
+    setFormData({ placa: '', marca: '', modelo: '', capacidad: '', estado: 'DISPONIBLE' });
+    setShowModal(true);
+  };
+
+  const handleEditClick = (vehicle) => {
+    setIsEditing(true);
+    setEditingId(vehicle.id);
+    setError('');
+    setFormData({
+      placa: vehicle.placa,
+      marca: vehicle.marca,
+      modelo: vehicle.modelo,
+      capacidad: vehicle.capacidad,
+      estado: vehicle.estado
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      // Normalización a nivel de capa cliente: convertimos a decimal y forzamos
-      // mayúsculas en la placa para alinearnos con el regex perimetral del backend.
       const payload = { ...formData, capacidad: parseFloat(formData.capacidad) };
-      await api.post('/vehiculos', payload);
+      if (isEditing) {
+        await api.put(`/vehiculos/${editingId}`, payload);
+      } else {
+        await api.post('/vehiculos', payload);
+      }
       setShowModal(false);
       fetchVehicles();
-      // Reseteo limpio del formulario
       setFormData({ placa: '', marca: '', modelo: '', capacidad: '', estado: 'DISPONIBLE' });
+      setIsEditing(false);
+      setEditingId(null);
     } catch (error) {
-      setError(error.response?.data?.error || 'Error al registrar el vehículo');
+      setError(error.response?.data?.error || 'Error al guardar el vehículo');
     }
   };
 
   const handleDelete = async (id) => {
-    // Confirmación nativa antes de realizar baja lógica irrevocable en la UI
     if (!window.confirm('¿Estás seguro de desactivar este vehículo?')) return;
     try {
-      // El backend intercepta esta petición y ejecuta un Soft Delete (establece deletedAt y activo: false)
       await api.delete(`/vehiculos/${id}`);
-      fetchVehicles(); // Recarga la flota actualizada
+      fetchVehicles();
     } catch (error) {
       alert(error.response?.data?.error || 'Error al eliminar');
     }
   };
+
 
   return (
     <div>
@@ -83,7 +106,7 @@ const Vehicles = () => {
         </div>
         <button 
           className="btn btn-primary d-flex align-items-center gap-2"
-          onClick={() => setShowModal(true)}
+          onClick={handleOpenCreateModal}
         >
           <Plus size={20} /> Nuevo Vehículo
         </button>
@@ -122,7 +145,10 @@ const Vehicles = () => {
                     </td>
                     {isAdmin() && (
                       <td className="text-end pe-4">
-                        <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(v.id)}>
+                        <button className="btn btn-link text-primary p-0 me-3" onClick={() => handleEditClick(v)} title="Editar Vehículo">
+                          <Edit size={18} />
+                        </button>
+                        <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(v.id)} title="Desactivar Vehículo">
                           <Trash2 size={18} />
                         </button>
                       </td>
@@ -140,7 +166,10 @@ const Vehicles = () => {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content border-0">
               <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title d-flex align-items-center gap-2"><Truck size={20} /> Registrar Vehículo</h5>
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <Truck size={20} /> 
+                  {isEditing ? 'Editar Vehículo' : 'Registrar Vehículo'}
+                </h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
               </div>
               <form onSubmit={handleSubmit}>

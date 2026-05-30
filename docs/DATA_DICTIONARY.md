@@ -62,23 +62,8 @@ Controle vehicular que opera en la cadena de distribución.
 
 ---
 
-### 4. Tabla: `rate_tariffs` (Configuración de Tarifas Base)
-Control administrativo del valor unitario del servicio.
-
-| Campo | Tipo PostgreSQL | Nullable | Restricciones | Descripción |
-| :--- | :--- | :---: | :--- | :--- |
-| `id` | `INTEGER` | No | PK, Serial | Identificador secuencial de la tarifa. |
-| `producto` | `enum_ProductType` | No | Unique | Tipo de producto (`FRUTO`, `COMPOST`). |
-| `valorKg` | `DECIMAL(12,2)` | No | - | Valor cobrado por kilogramo transportado. |
-| `activo` | `BOOLEAN` | No | Default: `true` | Si la tarifa está vigente. |
-| `createdAt` | `TIMESTAMP` | No | Default: `now()` | Fecha de creación. |
-| `updatedAt` | `TIMESTAMP` | No | Auto update | Fecha de modificación. |
-| `deletedAt` | `TIMESTAMP` | Sí | - | Borrado lógico. |
-
----
-
-### 5. Tabla: `trips` (Viajes Operativos - Núcleo Transaccional)
-Núcleo del negocio. Registra cada flete realizado de forma atómica.
+### 4. Tabla: `trips` (Viajes Operativos - Núcleo Transaccional)
+Núcleo del negocio. Registra cada flete realizado de forma atómica y su información financiera y logística.
 
 | Campo | Tipo PostgreSQL | Nullable | Restricciones | Descripción |
 | :--- | :--- | :---: | :--- | :--- |
@@ -86,12 +71,17 @@ Núcleo del negocio. Registra cada flete realizado de forma atómica.
 | `ticket` | `INTEGER` | No | Unique | Número de ticket de báscula física. |
 | `fecha` | `TIMESTAMP` | No | Index | Fecha en que se realizó el flete. |
 | `origen` | `VARCHAR(150)` | No | - | Ubicación de cargue/origen. |
+| `destino` | `VARCHAR(150)` | Sí | - | Ubicación de destino del flete. |
 | `producto` | `enum_ProductType` | No | - | Producto (`FRUTO`, `COMPOST`). |
-| `tipoPago` | `enum_PaymentType` | No | Default: `'TRANSFERENCIA'` | Tipo de pago convenido. |
-| `tonelaje` | `DECIMAL(10,3)` | No | - | Peso bruto transportado (en toneladas). |
+| `empresa` | `VARCHAR(100)` | Sí | - | Nombre de la empresa destinataria o relacionada con el flete. |
+| `tonelaje` | `DECIMAL(10,3)` | No | - | Peso neto transportado (en toneladas). |
 | `valorPago` | `DECIMAL(12,2)` | No | - | Liquidación financiera automática (Calculado). |
+| `porcentajeConductor` | `DECIMAL(5,2)` | Sí | Default: `1.00` | Porcentaje de participación asignado al conductor por el viaje. |
+| `valorConductor` | `DECIMAL(12,2)` | Sí | - | Valor liquidado correspondiente al pago del conductor. |
 | `consumoAcpm` | `DECIMAL(8,3)` | Sí | - | ACPM consumido durante el flete (Galones). |
+| `valorAcpm` | `DECIMAL(12,2)` | Sí | Default: `0.00` | Valor monetario del ACPM consumido durante el viaje. |
 | `usoFerry` | `BOOLEAN` | No | Default: `false` | Indica si el flete incluyó cruce fluvial en Ferry. |
+| `valorFerry` | `DECIMAL(12,2)` | Sí | Default: `0.00` | Costo monetario del cruce fluvial en Ferry. |
 | `driverId` | `UUID` | No | FK -> `drivers(id)` | Conductor asignado al viaje. |
 | `vehicleId` | `UUID` | No | FK -> `vehicles(id)` | Vehículo asignado al viaje. |
 | `registradoPorId` | `UUID` | No | FK -> `users(id)` | Usuario que registró el flete inicialmente. |
@@ -108,7 +98,7 @@ Núcleo del negocio. Registra cada flete realizado de forma atómica.
 
 ---
 
-### 6. Tabla: `audit_logs` (Bitácora Forense Inmutable)
+### 5. Tabla: `audit_logs` (Bitácora Forense Inmutable)
 Trazabilidad forense inmutable de todas las mutaciones críticas y accesos al sistema.
 
 | Campo | Tipo PostgreSQL | Nullable | Restricciones | Descripción |
@@ -126,7 +116,7 @@ Trazabilidad forense inmutable de todas las mutaciones críticas y accesos al si
 
 ---
 
-### 7. Tabla: `refresh_tokens` (Sesiones de Usuario)
+### 6. Tabla: `refresh_tokens` (Sesiones de Usuario)
 Control de persistencia de sesiones seguras.
 
 | Campo | Tipo PostgreSQL | Nullable | Restricciones | Descripción |
@@ -140,9 +130,8 @@ Control de persistencia de sesiones seguras.
 
 ---
 
-### 8. Auditoría e Integridad Referencial
+### 7. Auditoría e Integridad Referencial
 
 *   **Tercera Forma Normal (3NF):** El modelo de base de datos relacional elimina la redundancia e introduce relaciones normalizadas mediante claves primarias (`PK` en formato UUIDv4 o auto-incrementales según el tipo de catálogo) y claves foráneas (`FK`), garantizando la integridad referencial a nivel de motor (PostgreSQL).
 *   **Sincronización Automatizada:** El diccionario se encuentra sincronizado bidireccionalmente con el archivo `schema.prisma`. Se puede regenerar y exportar la versión en formato Excel (`Diccionario_Datos_V2_Sincronizado.xlsx`) ejecutando el script utilitario `generate_dict.py`.
 *   **Seguridad y Auditoría Pasiva:** Los campos `createdAt`, `updatedAt` y `deletedAt` están implementados de manera transversal en todas las tablas para permitir consultas delta eficientes y garantizar la auditoría pasiva del ciclo de vida de los registros.
-

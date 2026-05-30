@@ -10,6 +10,25 @@ const formatCurrencyCOP = (val) => {
   return Number(stringVal).toLocaleString('de-DE');
 };
 
+const getInitialFormData = () => ({
+  ticket: '',
+  fecha: new Date().toISOString().split('T')[0],
+  origen: localStorage.getItem('defaultOrigen') || '',
+  destino: localStorage.getItem('defaultDestino') || '',
+  empresa: '',
+  producto: 'FRUTO',
+  tonelaje: '',   // Ingresado en KILOGRAMOS en la UI, guardado en TONELADAS en la BD
+  valorPago: '',  // Manual para COMPOST
+  precioKg: localStorage.getItem('defaultPriceKg') || '100',   // Pago por KILOGRAMO para FRUTO
+  driverId: '',
+  vehicleId: '',
+  consumoAcpm: 0,
+  usoFerry: false,
+  porcentajeConductor: 1.00,
+  valorAcpm: localStorage.getItem('defaultAcpm') || '0',
+  valorFerry: localStorage.getItem('defaultFerry') || '0'
+});
+
 const Trips = ({ isDashboard = false }) => {
   const [trips, setTrips] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -19,24 +38,7 @@ const Trips = ({ isDashboard = false }) => {
   const [error, setError] = useState('');
 
   // Estado del formulario
-  const [formData, setFormData] = useState({
-    ticket: '',
-    fecha: new Date().toISOString().split('T')[0],
-    origen: '',
-    destino: '',
-    empresa: '',
-    producto: 'FRUTO',
-    tonelaje: '',   // Ingresado en KILOGRAMOS en la UI, guardado en TONELADAS en la BD
-    valorPago: '',  // Manual para COMPOST
-    precioKg: '',   // Pago por KILOGRAMO para FRUTO
-    driverId: '',
-    vehicleId: '',
-    consumoAcpm: 0,
-    usoFerry: false,
-    porcentajeConductor: 1.00,
-    valorAcpm: '',
-    valorFerry: ''
-  });
+  const [formData, setFormData] = useState(getInitialFormData());
 
   useEffect(() => {
     fetchData();
@@ -188,24 +190,7 @@ const Trips = ({ isDashboard = false }) => {
       fetchData(); // Recargar lista
       
       // Reset form
-      setFormData({
-        ticket: '',
-        fecha: new Date().toISOString().split('T')[0],
-        origen: '',
-        destino: '',
-        empresa: '',
-        producto: 'FRUTO',
-        tonelaje: '',
-        valorPago: '',
-        precioKg: '',
-        driverId: '',
-        vehicleId: '',
-        consumoAcpm: 0,
-        usoFerry: false,
-        porcentajeConductor: 1.00,
-        valorAcpm: '',
-        valorFerry: ''
-      });
+      setFormData(getInitialFormData());
     } catch (error) {
       setError(error.response?.data?.error || 'Error al registrar el viaje');
     }

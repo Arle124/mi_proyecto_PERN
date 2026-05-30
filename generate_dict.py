@@ -34,31 +34,89 @@ def parse_prisma(file_path):
             nulidad = "No" if "?" not in field_type else "Sí"
             clean_type = field_type.replace("?", "")
 
-            # Descripción Funcional (Basada en lógica de negocio solicitada)
+            # Descripción Funcional detallada y profesional
             desc = ""
-            if field_name == "id": 
-                desc = "Identificador Único Universal (UUID)."
+            if field_name == "id":
+                desc = "Identificador Único Universal (UUID) autogenerado."
+            elif field_name == "createdAt":
+                desc = "Marca temporal inmutable de la creación del registro."
+            elif field_name == "updatedAt":
+                desc = "Marca temporal de la última modificación automática del registro."
             elif field_name == "deletedAt":
-                desc = "Técnica que permite desactivar registros sin eliminarlos físicamente para garantizar la trazabilidad."
+                desc = "Fecha de eliminación lógica (Soft Delete) para preservar la trazabilidad."
+            elif field_name == "activo":
+                desc = "Indicador lógico de activación en el sistema."
+            elif "Nombre" in field_name or "Apellido" in field_name:
+                desc = f"Parte de la información del nombre personal ({field_name})."
+            elif field_name == "correo":
+                desc = "Correo electrónico corporativo único para autenticación."
+            elif field_name == "password":
+                desc = "Hash bcrypt de seguridad para la contraseña del usuario."
+            elif field_name == "rol":
+                desc = "Rol asignado para control de acceso (ADMIN, OPERADOR)."
+            elif field_name == "cedula":
+                desc = "Cédula de ciudadanía o identificación del conductor."
+            elif field_name == "telefono":
+                desc = "Número telefónico de contacto del conductor."
+            elif field_name == "placa":
+                desc = "Placa patente de identificación única del vehículo."
+            elif field_name == "marca":
+                desc = "Marca fabricante del vehículo."
+            elif field_name == "modelo":
+                desc = "Modelo o año del vehículo."
+            elif field_name == "capacidad":
+                desc = "Capacidad máxima de carga permitida en toneladas métricas."
+            elif field_name == "estado" and model_name == "Vehicle":
+                desc = "Estado de disponibilidad del vehículo (DISPONIBLE, EN_VIAJE, MANTENIMIENTO)."
             elif model_name == "Trip":
-                desc = f"Campo del Registro de Viajes y control de tickets ({field_name})."
+                trip_desc = {
+                    "ticket": "Número secuencial único del ticket de báscula física.",
+                    "fecha": "Fecha y hora en que se realizó el flete.",
+                    "origen": "Ubicación de origen/cargue del flete.",
+                    "destino": "Ubicación de destino del flete.",
+                    "producto": "Tipo de producto transportado (FRUTO, COMPOST).",
+                    "empresa": "Nombre de la empresa destinataria o relacionada con el viaje.",
+                    "tonelaje": "Peso neto transportado en toneladas métricas.",
+                    "valorPago": "Monto total liquidado y a pagar por el viaje.",
+                    "porcentajeConductor": "Porcentaje de comisión asignado al conductor (ej. 1.00 para 100%).",
+                    "valorConductor": "Monto liquidado correspondiente al pago del conductor.",
+                    "consumoAcpm": "Consumo de combustible ACPM en galones.",
+                    "valorAcpm": "Costo monetario del combustible ACPM consumido.",
+                    "usoFerry": "Indicador de si se utilizó servicio de cruce fluvial en Ferry.",
+                    "valorFerry": "Costo monetario del cruce fluvial en Ferry.",
+                    "driverId": "Clave foránea que referencia al conductor del viaje.",
+                    "vehicleId": "Clave foránea que referencia al vehículo del viaje.",
+                    "registradoPorId": "Clave foránea del usuario operador que registró el viaje.",
+                    "actualizadoPorId": "Clave foránea del último usuario que modificó el viaje.",
+                    "driver": "Relación con la entidad Conductor.",
+                    "vehicle": "Relación con la entidad Vehículo.",
+                    "registradoPor": "Relación con el Usuario creador.",
+                    "actualizadoPor": "Relación con el Usuario editor."
+                }
+                desc = trip_desc.get(field_name, f"Atributo operativo del viaje ({field_name}).")
             elif model_name == "AuditLog":
-                desc = f"Parte de la Auditoría para registrar acciones realizadas por los usuarios ({field_name})."
-            elif "Nombre" in field_name or "Apellido" in field_name: 
-                desc = "Datos personales registrados en el sistema."
-            elif field_name == "correo": 
-                desc = "Email único para autenticación y notificaciones."
-            elif field_name == "password": 
-                desc = "Hash bcrypt de seguridad para la contraseña."
-            elif field_name == "placa": 
-                desc = "Identificación vehicular (Formato AAA000)."
-            elif field_name == "activo": 
-                desc = "Estado de activación lógica en el sistema."
-            elif field_name == "capacidad": 
-                desc = "Carga máxima permitida en toneladas."
-            elif field_name == "estado": 
-                desc = "Estado operativo actual del recurso."
-            else: 
+                audit_desc = {
+                    "userId": "Clave foránea del usuario que realizó la acción auditada.",
+                    "user": "Relación con el Usuario que ejecutó la acción.",
+                    "action": "Acción registrada (CREATE, UPDATE, DELETE, LOGIN, LOGOUT).",
+                    "entity": "Nombre de la entidad o tabla donde se realizó el cambio.",
+                    "entityId": "Identificador del registro de la entidad afectada.",
+                    "oldValues": "Estado anterior del registro en formato JSON.",
+                    "newValues": "Estado posterior del registro en formato JSON.",
+                    "ipAddress": "Dirección IP del cliente que generó el cambio.",
+                    "userAgent": "Cadena identificadora del cliente o navegador (User-Agent)."
+                }
+                desc = audit_desc.get(field_name, f"Campo de auditoría ({field_name}).")
+            elif model_name == "RefreshToken":
+                token_desc = {
+                    "token": "Valor del token de refresco JWT.",
+                    "userId": "Clave foránea del usuario al que pertenece la sesión.",
+                    "user": "Relación con el Usuario de la sesión.",
+                    "expiresAt": "Fecha y hora de expiración de la sesión.",
+                    "revoked": "Indicador de si el token de refresco fue invalidado/cerrado."
+                }
+                desc = token_desc.get(field_name, f"Campo de sesión ({field_name}).")
+            else:
                 desc = f"Atributo técnico de la entidad {model_name}."
 
             data.append({
@@ -75,10 +133,10 @@ def parse_prisma(file_path):
 def main():
     import os
     prisma_path = 'server/prisma/schema.prisma'
-    output_path = 'Diccionario_Datos_V2_Sincronizado.xlsx'
+    output_path = 'docs/Diccionario_Datos_V2_Sincronizado.xlsx'
     if not os.path.exists(prisma_path):
         prisma_path = 'mi-proyecto-pern/server/prisma/schema.prisma'
-        output_path = 'mi-proyecto-pern/Diccionario_Datos_V2_Sincronizado.xlsx'
+        output_path = 'mi-proyecto-pern/docs/Diccionario_Datos_V2_Sincronizado.xlsx'
     
     try:
         data = parse_prisma(prisma_path)
@@ -101,3 +159,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

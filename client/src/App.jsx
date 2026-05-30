@@ -10,6 +10,7 @@ import Drivers from './pages/Drivers';
 import Users from './pages/Users';
 import Finance from './pages/Finance';
 import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -49,6 +50,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout><Drivers /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <Layout><Settings /></Layout>
               </ProtectedRoute>
             } 
           />

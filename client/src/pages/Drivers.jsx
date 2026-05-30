@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, UserCircle, Save, Trash2, Phone, CreditCard } from 'lucide-react';
+import { Plus, UserCircle, Save, Trash2, Phone, CreditCard, Edit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Drivers = () => {
@@ -8,6 +8,8 @@ const Drivers = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const { isAdmin } = useAuth();
   
   const [formData, setFormData] = useState({
@@ -40,16 +42,45 @@ const Drivers = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleOpenCreateModal = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setError('');
+    setFormData({ cedula: '', primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '', telefono: '' });
+    setShowModal(true);
+  };
+
+  const handleEditClick = (driver) => {
+    setIsEditing(true);
+    setEditingId(driver.id);
+    setError('');
+    setFormData({
+      cedula: driver.cedula,
+      primerNombre: driver.primerNombre,
+      segundoNombre: driver.segundoNombre || '',
+      primerApellido: driver.primerApellido,
+      segundoApellido: driver.segundoApellido || '',
+      telefono: driver.telefono || ''
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await api.post('/conductores', formData);
+      if (isEditing) {
+        await api.put(`/conductores/${editingId}`, formData);
+      } else {
+        await api.post('/conductores', formData);
+      }
       setShowModal(false);
       fetchDrivers();
       setFormData({ cedula: '', primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '', telefono: '' });
+      setIsEditing(false);
+      setEditingId(null);
     } catch (error) {
-      setError(error.response?.data?.error || 'Error al registrar el conductor');
+      setError(error.response?.data?.error || 'Error al guardar el conductor');
     }
   };
 
@@ -63,6 +94,7 @@ const Drivers = () => {
     }
   };
 
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -72,7 +104,7 @@ const Drivers = () => {
         </div>
         <button 
           className="btn btn-primary d-flex align-items-center gap-2"
-          onClick={() => setShowModal(true)}
+          onClick={handleOpenCreateModal}
         >
           <Plus size={20} /> Nuevo Conductor
         </button>
@@ -108,7 +140,10 @@ const Drivers = () => {
                     </td>
                     {isAdmin() && (
                       <td className="text-end pe-4">
-                        <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(d.id)}>
+                        <button className="btn btn-link text-primary p-0 me-3" onClick={() => handleEditClick(d)} title="Editar Conductor">
+                          <Edit size={18} />
+                        </button>
+                        <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(d.id)} title="Desactivar Conductor">
                           <Trash2 size={18} />
                         </button>
                       </td>
@@ -126,7 +161,10 @@ const Drivers = () => {
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content border-0">
               <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title d-flex align-items-center gap-2"><UserCircle size={20} /> Registrar Conductor</h5>
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <UserCircle size={20} /> 
+                  {isEditing ? 'Editar Conductor' : 'Registrar Conductor'}
+                </h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
               </div>
               <form onSubmit={handleSubmit}>
