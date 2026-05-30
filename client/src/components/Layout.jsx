@@ -83,9 +83,6 @@ const Layout = ({ children }) => {
           <NavLink to="/vehiculos" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
             <Truck size={20} /> Vehículos
           </NavLink>
-          <NavLink to="/settings" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
-            <Settings size={20} /> Configuración
-          </NavLink>
           {isAdmin() && (
             <>
               <NavLink to="/usuarios" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
@@ -96,6 +93,9 @@ const Layout = ({ children }) => {
               </NavLink>
             </>
           )}
+          <NavLink to="/settings" className="nav-link" onClick={() => setIsSidebarOpen(false)}>
+            <Settings size={20} /> Configuración
+          </NavLink>
         </nav>
 
         <div className="mt-auto border-top border-secondary pt-3">
