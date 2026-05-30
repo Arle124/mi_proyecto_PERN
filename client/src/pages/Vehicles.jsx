@@ -11,6 +11,12 @@ const Vehicles = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const { isAdmin } = useAuth();
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  });
   
   const [formData, setFormData] = useState({
     placa: '',
@@ -112,14 +118,20 @@ const Vehicles = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de desactivar este vehículo?')) return;
-    try {
-      await api.delete(`/vehiculos/${id}`);
-      fetchVehicles();
-    } catch (error) {
-      alert(error.response?.data?.error || 'Error al eliminar');
-    }
+  const handleDelete = (id) => {
+    setConfirmModal({
+      show: true,
+      title: 'Desactivar Vehículo',
+      message: '¿Estás seguro de desactivar este vehículo?',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/vehiculos/${id}`);
+          fetchVehicles();
+        } catch (error) {
+          alert(error.response?.data?.error || 'Error al eliminar');
+        }
+      }
+    });
   };
 
 
@@ -225,6 +237,46 @@ const Vehicles = () => {
                   <button type="submit" className="btn btn-primary d-flex align-items-center gap-2"><Save size={18} /> Guardar</button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación */}
+      {confirmModal.show && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '400px' }}>
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header border-0 pb-0">
+                <h5 className="modal-title fw-bold text-dark">{confirmModal.title}</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                ></button>
+              </div>
+              <div className="modal-body py-3">
+                <p className="text-secondary mb-0" style={{ fontSize: '0.95rem' }}>{confirmModal.message}</p>
+              </div>
+              <div className="modal-footer border-0 pt-0">
+                <button 
+                  type="button" 
+                  className="btn btn-light fw-semibold" 
+                  onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger fw-semibold" 
+                  onClick={() => {
+                    confirmModal.onConfirm();
+                    setConfirmModal({ ...confirmModal, show: false });
+                  }}
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
           </div>
         </div>
