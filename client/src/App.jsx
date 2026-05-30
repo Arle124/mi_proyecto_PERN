@@ -53,14 +53,6 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/settings" 
-            element={
-              <ProtectedRoute>
-                <Layout><Settings /></Layout>
-              </ProtectedRoute>
-            } 
-          />
           
           {/* Rutas de Administrador */}
           <Route 
@@ -78,6 +70,15 @@ function App() {
               <AdminRoute>
                 <Layout><Finance /></Layout>
               </AdminRoute>
+            } 
+          />
+
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute>
+                <Layout><Settings /></Layout>
+              </ProtectedRoute>
             } 
           />
 
