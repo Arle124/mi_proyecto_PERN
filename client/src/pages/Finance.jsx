@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { DollarSign, Filter, Download, Printer, Table, Calendar, AlertCircle } from 'lucide-react';
+import { DollarSign, Filter, Download, Table, Calendar, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const Finance = () => {
@@ -123,14 +123,6 @@ const Finance = () => {
     XLSX.writeFile(workbook, `reporte_financiero_novapalma_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  /**
-   * IMPRESIÓN Y EXPORTACIÓN A PDF NATIVA
-   * Utiliza las hojas de estilo del navegador para formato horizontal (Landscape)
-   */
-  const triggerPrint = () => {
-    window.print();
-  };
-
   if (!isAdmin()) {
     return <div className="alert alert-danger p-3">Acceso restringido. Solo administradores.</div>;
   }
@@ -149,9 +141,6 @@ const Finance = () => {
         <div className="d-flex gap-2">
           <button onClick={exportToExcel} className="btn btn-outline-success d-flex align-items-center gap-2">
             <Download size={18} /> Exportar Excel
-          </button>
-          <button onClick={triggerPrint} className="btn btn-outline-primary d-flex align-items-center gap-2">
-            <Printer size={18} /> Imprimir PDF
           </button>
         </div>
       </div>
