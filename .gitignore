@@ -3,5 +3,15 @@ node_modules/
 dist/
 .DS_Store
 .aider*
-
 implementacion_online.md
+
+# Document extraction assets
+extracted_text.txt
+extracted_images/
+generate_dict.py
+
+# Backups and temporary lock files
+*.bak
+*.bak.docx
+.~lock.*
+Viajes Novapalma.xlsx

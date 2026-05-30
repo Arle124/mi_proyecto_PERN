@@ -230,3 +230,45 @@ Como hito final en la sustentación del proyecto, se ha realizado una **Auditor�
     *   Las sesiones están blindadas mediante cookies HttpOnly para mitigar ataques XSS y CSRF.
 
 *El sistema Novapalma se encuentra 100% verificado, auditado y listo para sustentación de grado o paso a producción de alta criticidad.*
+
+---
+
+### 16. Fortalecimiento Técnico e Innovaciones de Calidad (Mayo 2026)
+
+Con el fin de elevar el estándar de calidad de Novapalma hacia un nivel empresarial óptimo, se ha implementado una robusta actualización técnica que abarca la seguridad perimetral, la identidad de marca, y la experiencia de usuario.
+
+#### 16.1. Blindaje Completo de Esquemas Backend (Zod)
+- Se endurecieron las reglas de validación en el servidor mediante **Zod**:
+  - La cédula de conductores y números telefónicos ahora exigen obligatoriamente secuencias numéricas sin caracteres especiales ni espacios.
+  - Los campos de nombres en conductores y usuarios exigen una longitud mínima de 2 caracteres, impidiendo el registro de entradas incompletas o vacías.
+  - La capacidad de los vehículos se valida como un decimal estrictamente positivo.
+
+#### 16.2. Sanitización en Caliente (Filtro en Tiempo Real en Frontend)
+- Se introdujeron manejadores de eventos optimizados (`onChange`) que impiden físicamente la entrada de datos inválidos en los formularios:
+  - **Filtro Alfabético Estricto:** Los campos de nombres de usuarios y conductores eliminan instantáneamente números y símbolos especiales, admitiendo únicamente letras, tildes, diéresis y la letra *ñ*.
+  - **Filtro Numérico Estricto:** Los campos de cédula, teléfono y tonelaje impiden la entrada de cualquier carácter no numérico en tiempo real, bloqueando malas entradas desde el teclado.
+
+#### 16.3. Edición de Planillas y Conversión Automática de Métricas
+- Se dotó al panel de **Administración de Viajes** con la capacidad de edición y eliminación segura para administradores.
+- Para evitar fricciones de usuario, el modal de edición implementa una conversión bidireccional automática: la base de datos almacena los pesos en toneladas (tipo de dato float), pero la interfaz de usuario los presenta y edita en kilogramos (enteros), realizando el cálculo transparente al guardar los cambios en base de datos.
+
+#### 16.4. Políticas de Cookies Flexibles y CORS Dinámico
+- Para solventar las restricciones de cookies de Chrome (`SameSite=None` requiere HTTPS/Secure), el controlador de sesión backend asigna dinámicamente el atributo de cookie:
+  - **Local:** `SameSite=Lax` para permitir el inicio de sesión transparente en desarrollo bajo HTTP.
+  - **Producción:** `SameSite=None; Secure` para proteger los tokens en conexiones HTTPS remotas.
+- El servidor backend cuenta con un middleware CORS dinámico que acepta dinámicamente peticiones locales (`localhost`, `[::1]`) y despliegues en producción (Render/Vercel) sin necesidad de configuraciones manuales.
+
+#### 16.5. Identidad Corporativa Premium (Branding)
+- Se desechó la iconografía genérica del sistema.
+- Se integró un imagotipo premium de transporte de carga pesada en la pantalla de inicio de sesión (`Login.jsx`), combinando azul y verde que simbolizan la marca Novapalma.
+- Se configuró el favicon del navegador (`favicon.png`) para mostrar el icono en alta calidad en las pestañas del navegador, mejorando drásticamente el aspecto visual y la presentación profesional del proyecto.
+
+#### 16.6. Modales de Confirmación de Acción Personalizados (UX Premium)
+- Se eliminaron todas las alertas de diálogo del sistema nativas (`window.confirm()`) que empobrecían la experiencia del usuario.
+- En su lugar, se implementó un componente de **Modal de Confirmación flotante y elegante** con diseño Bootstrap 5 en los procesos de eliminación de viajes y de desactivación de conductores y vehículos.
+- Se depuraron mensajes obsoletos como la "liberación del vehículo" en los mensajes de confirmación de fletes, alineándolos perfectamente con las reglas operativas de la empresa.
+
+#### 16.7. Automatización de Pruebas de Extremo a Extremo (E2E)
+- Se estructuraron y ejecutaron suites de prueba automáticas de extremo a extremo utilizando **Selenium WebDriver** (`tests/test-unsanitized-fields.js`).
+- Estas pruebas simulan el flujo completo del usuario en el navegador real, auditando las defensas del sistema y asegurando que las entradas del frontend y los esquemas del backend funcionen de manera perfectamente sincronizada.
+
