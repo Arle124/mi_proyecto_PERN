@@ -28,7 +28,7 @@ const Trips = ({ isDashboard = false }) => {
     producto: 'FRUTO',
     tonelaje: '',   // Ingresado en KILOGRAMOS en la UI, guardado en TONELADAS en la BD
     valorPago: '',  // Manual para COMPOST
-    precioTon: '',  // Pago por TONELADA para FRUTO
+    precioKg: '',   // Pago por KILOGRAMO para FRUTO
     driverId: '',
     vehicleId: '',
     consumoAcpm: 0,
@@ -113,7 +113,7 @@ const Trips = ({ isDashboard = false }) => {
 
     if (
       name === 'valorPago' || 
-      name === 'precioTon' || 
+      name === 'precioKg' || 
       name === 'valorAcpm' || 
       name === 'valorFerry'
     ) {
@@ -151,9 +151,9 @@ const Trips = ({ isDashboard = false }) => {
   const getCalculatedPayment = () => {
     if (formData.producto === 'FRUTO') {
       const kg = parseFloat(formData.tonelaje) || 0;
-      const priceTon = parseFloat(formData.precioTon) || 0;
-      // kg / 1000 da el tonelaje equivalente. Flete = Tons * PrecioPorTon
-      return Math.round((kg / 1000) * priceTon);
+      const priceKg = parseFloat(formData.precioKg) || 0;
+      // Cálculo directo: Kilogramos * Precio por Kg
+      return Math.round(kg * priceKg);
     }
     return parseFloat(formData.valorPago) || 0;
   };
@@ -197,7 +197,7 @@ const Trips = ({ isDashboard = false }) => {
         producto: 'FRUTO',
         tonelaje: '',
         valorPago: '',
-        precioTon: '',
+        precioKg: '',
         driverId: '',
         vehicleId: '',
         consumoAcpm: 0,
@@ -510,36 +510,42 @@ const Trips = ({ isDashboard = false }) => {
                           <div>
                             {formData.producto === 'FRUTO' ? (
                               <>
-                                <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO (KG &rarr; TONS)</span>
-                                <h6 className="m-0 fw-bold mb-1">Precio por Tonelada (Fruta)</h6>
-                                <p className="text-muted small mb-2">Las tarifas se pagan por tonelada, ingresando el peso recibido en kilogramos.</p>
+                                <span className="badge bg-success mb-1">CÁLCULO AUTOMÁTICO (KG &rarr; PRECIO KILO)</span>
+                                <h6 className="m-0 fw-bold mb-1">Precio por Kilogramo (Fruta)</h6>
+                                <p className="text-muted small mb-2">Ingrese el valor pactado por kilo. El sistema calculará el flete y mostrará la equivalencia corporativa.</p>
                                 <div className="mt-2">
-                                  <label className="form-label small fw-bold text-success">Precio por Tonelada de Fruta (COP) *</label>
+                                  <label className="form-label small fw-bold text-success">Precio por Kg de Fruta (COP) *</label>
                                   <div className="input-group mb-2">
                                     <span className="input-group-text bg-success text-white">$</span>
                                     <input 
                                       type="text" 
-                                      name="precioTon" 
+                                      name="precioKg" 
                                       className="form-control fw-bold text-end" 
-                                      placeholder="Ej: 130.000" 
-                                      value={formatCurrencyCOP(formData.precioTon)} 
+                                      placeholder="Ej: 130" 
+                                      value={formatCurrencyCOP(formData.precioKg)} 
                                       onChange={handleInputChange} 
                                       required={formData.producto === 'FRUTO'}
                                     />
-                                    <span className="input-group-text bg-light text-muted">/ Ton</span>
+                                    <span className="input-group-text bg-light text-muted">/ kg</span>
                                   </div>
                                   
                                   <div className="bg-white p-2 rounded border border-light-subtle small mt-2">
                                     <div className="d-flex justify-content-between mb-1">
                                       <span className="text-muted">Cantidad a facturar:</span>
                                       <span className="fw-semibold text-dark">
-                                        {Number(formData.tonelaje || 0).toLocaleString()} kg = {((parseFloat(formData.tonelaje) || 0) / 1000).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} Tons
+                                        {Number(formData.tonelaje || 0).toLocaleString()} kg ({((parseFloat(formData.tonelaje) || 0) / 1000).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })} Tons)
                                       </span>
                                     </div>
                                     <div className="d-flex justify-content-between mb-1">
-                                      <span className="text-muted">Precio por Tonelada:</span>
+                                      <span className="text-muted">Precio por Kilogramo:</span>
                                       <span className="fw-semibold text-dark">
-                                        ${formatCurrencyCOP(formData.precioTon)} COP
+                                        ${formatCurrencyCOP(formData.precioKg)} COP / kg
+                                      </span>
+                                    </div>
+                                    <div className="d-flex justify-content-between mb-1 text-secondary">
+                                      <span className="small">Equivalente por Tonelada:</span>
+                                      <span className="small fw-semibold">
+                                        ${formatCurrencyCOP(Number(formData.precioKg || 0) * 1000)} COP / Ton
                                       </span>
                                     </div>
                                     <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
