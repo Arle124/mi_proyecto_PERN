@@ -23,7 +23,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   // 1. Crear Administrador Inicial
-  const adminPassword = await bcrypt.hash('admin123', 10);
+  const adminPassword = await bcrypt.hash('AdminNovapalma2026!', 10);
   const admin = await prisma.user.create({
     data: {
       primerNombre: 'Admin',
@@ -37,7 +37,7 @@ async function main() {
   console.log(`👤 Usuario Admin Creado: ${admin.correo}`);
 
   // 2. Crear Operador Inicial
-  const operatorPassword = await bcrypt.hash('operador123', 10);
+  const operatorPassword = await bcrypt.hash('OperadorNovapalma2026!', 10);
   const operator = await prisma.user.create({
     data: {
       primerNombre: 'Operador',

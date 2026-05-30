@@ -6,7 +6,11 @@ export const createUserSchema = z.object({
   primerApellido: z.string().min(1, 'El primer apellido es obligatorio').max(60),
   segundoApellido: z.string().max(60).optional().nullable(),
   correo: z.string().email('Debe ser un correo electrónico válido').max(200),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(255),
+  password: z.string()
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+    .regex(/[0-9]/, 'La contraseña debe contener al menos un número')
+    .regex(/[^A-Za-z0-9]/, 'La contraseña debe contener al menos un carácter especial (ej. !@#$%^&*)')
+    .max(255),
   rol: z.enum(['ADMIN', 'OPERADOR']).optional(),
 });
 

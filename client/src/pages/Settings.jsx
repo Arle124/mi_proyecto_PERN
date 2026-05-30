@@ -92,6 +92,14 @@ const Settings = () => {
         setProfileError('La contraseña debe tener al menos 8 caracteres.');
         return;
       }
+      if (!/[0-9]/.test(profileData.password)) {
+        setProfileError('La contraseña debe contener al menos un número.');
+        return;
+      }
+      if (!/[^A-Za-z0-9]/.test(profileData.password)) {
+        setProfileError('La contraseña debe contener al menos un carácter especial (ej. !@#$%^&*).');
+        return;
+      }
       if (profileData.password !== profileData.confirmPassword) {
         setProfileError('Las contraseñas no coinciden.');
         return;

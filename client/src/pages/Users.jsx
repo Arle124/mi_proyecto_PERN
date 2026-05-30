@@ -47,6 +47,21 @@ const Users = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Validar robustez de contraseña en frontend para evitar rebotes de la API
+    if (formData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos un número.');
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos un carácter especial (ej. !@#$%^&*).');
+      return;
+    }
+
     try {
       await api.post('/usuarios', formData);
       setShowModal(false);
