@@ -39,6 +39,21 @@ const Drivers = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Sanitización en caliente de cédula y teléfono (solo números)
+    if (name === 'cedula' || name === 'telefono') {
+      const numericVal = value.replace(/\D/g, '');
+      setFormData({ ...formData, [name]: numericVal });
+      return;
+    }
+    
+    // Sanitización en caliente de nombres (solo letras y espacios)
+    if (['primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido'].includes(name)) {
+      const alphaVal = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+      setFormData({ ...formData, [name]: alphaVal });
+      return;
+    }
+    
     setFormData({ ...formData, [name]: value });
   };
 

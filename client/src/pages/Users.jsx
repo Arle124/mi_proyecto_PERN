@@ -41,6 +41,14 @@ const Users = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Sanitización en caliente de nombres (solo letras y espacios)
+    if (['primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido'].includes(name)) {
+      const alphaVal = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+      setFormData({ ...formData, [name]: alphaVal });
+      return;
+    }
+    
     setFormData({ ...formData, [name]: value });
   };
 

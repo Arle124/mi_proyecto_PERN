@@ -41,6 +41,32 @@ const Vehicles = () => {
    */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Sanitización en caliente de placa (remover no-alfanuméricos, forzar mayúsculas y máximo 6 caracteres)
+    if (name === 'placa') {
+      const sanitizedPlaca = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+      setFormData({ ...formData, placa: sanitizedPlaca });
+      return;
+    }
+    
+    // Sanitización en caliente de capacidad (solo números y un único punto decimal)
+    if (name === 'capacidad') {
+      let numericDecimal = value.replace(/[^0-9.]/g, '');
+      const parts = numericDecimal.split('.');
+      if (parts.length > 2) {
+        numericDecimal = `${parts[0]}.${parts.slice(1).join('')}`;
+      }
+      setFormData({ ...formData, capacidad: numericDecimal });
+      return;
+    }
+    
+    // Sanitización de marca y modelo (solo caracteres limpios)
+    if (name === 'marca' || name === 'modelo') {
+      const cleanVal = value.replace(/[^a-zA-Z0-9\s.-]/g, '');
+      setFormData({ ...formData, [name]: cleanVal });
+      return;
+    }
+    
     setFormData({ ...formData, [name]: value });
   };
 
