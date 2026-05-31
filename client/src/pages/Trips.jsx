@@ -201,15 +201,15 @@ const Trips = ({ isDashboard = false }) => {
       empresa: trip.empresa || '',
       producto: trip.producto,
       tonelaje: kg.toString(),
-      valorPago: trip.valorPago.toString(),
+      valorPago: Math.round(parseFloat(trip.valorPago) || 0).toString(),
       precioKg: calculatedPriceKg,
       driverId: trip.driverId,
       vehicleId: trip.vehicleId,
       consumoAcpm: trip.consumoAcpm ? trip.consumoAcpm.toString() : '0',
       usoFerry: trip.usoFerry || false,
       porcentajeConductor: trip.porcentajeConductor ? trip.porcentajeConductor.toString() : '1.00',
-      valorAcpm: trip.valorAcpm ? trip.valorAcpm.toString() : '0',
-      valorFerry: trip.valorFerry ? trip.valorFerry.toString() : '0'
+      valorAcpm: trip.valorAcpm ? Math.round(parseFloat(trip.valorAcpm) || 0).toString() : '0',
+      valorFerry: trip.valorFerry ? Math.round(parseFloat(trip.valorFerry) || 0).toString() : '0'
     });
     
     setShowModal(true);

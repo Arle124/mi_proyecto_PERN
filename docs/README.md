@@ -14,7 +14,7 @@ Bienvenido al directorio central de documentación de **Novapalma**. Aquí encon
 
 2.  👉 **[Diccionario de Datos Completo (DATA_DICTIONARY.md)](./DATA_DICTIONARY.md)**
     *   Catálogo exhaustivo de todas las tablas relacionales de la base de datos (3NF).
-    *   Detalle columna por columna de `users`, `drivers`, `vehicles`, `trips`, `rate_tariffs` y `audit_logs`.
+    *   Detalle columna por columna de `users`, `drivers`, `vehicles`, `trips`, `audit_logs` y `refresh_tokens`.
     *   Tipos de datos de PostgreSQL, restricciones, claves primarias/foráneas y descripciones funcionales.
     *   Índices optimizados de rendimiento para reportes dinámicos.
 

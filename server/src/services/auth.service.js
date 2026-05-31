@@ -26,7 +26,19 @@ export const login = async (correo, password, ipAddress, userAgent) => {
     { expiresIn: '8h' }
   );
 
-  // 4. Registrar auditoría de Login
+  // 4. Almacenar sesión activa en refresh_tokens
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 8); // Expira en 8 horas, coherente con JWT
+
+  await prisma.refreshToken.create({
+    data: {
+      token,
+      userId: user.id,
+      expiresAt
+    }
+  });
+
+  // 5. Registrar auditoría de Login
   await auditService.logAudit({
     userId: user.id,
     action: 'LOGIN',
@@ -36,7 +48,7 @@ export const login = async (correo, password, ipAddress, userAgent) => {
     userAgent
   });
 
-  console.log(`🔐 Usuario autenticado: ${user.correo}`);
+  console.log(`🔐 Usuario autenticado y sesión registrada: ${user.correo}`);
 
   return {
     token,
@@ -48,4 +60,36 @@ export const login = async (correo, password, ipAddress, userAgent) => {
       rol: user.rol
     }
   };
+};
+
+export const logout = async (token, ipAddress, userAgent) => {
+  if (!token) return;
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    // Si el token expiró o es inválido, aún intentamos decodificarlo sin firmar para auditar el logout
+    decoded = jwt.decode(token);
+  }
+
+  if (decoded && decoded.id) {
+    // Revocar el token (marcarlo como revoked) en la base de datos
+    await prisma.refreshToken.updateMany({
+      where: { token, userId: decoded.id },
+      data: { revoked: true }
+    });
+
+    // Registrar auditoría forense de LOGOUT
+    await auditService.logAudit({
+      userId: decoded.id,
+      action: 'LOGOUT',
+      entity: 'User',
+      entityId: decoded.id,
+      ipAddress,
+      userAgent
+    });
+
+    console.log(`🛡️ Auditoría Forense: LOGOUT verificado para el usuario ${decoded.id}`);
+  }
 };

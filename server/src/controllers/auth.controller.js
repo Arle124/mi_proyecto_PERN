@@ -57,6 +57,16 @@ export const login = async (req, res) => {
  * @seguridad Remueve físicamente la cookie de sesión del navegador para anular posteriores peticiones
  */
 export const logout = async (req, res) => {
+  const token = req.cookies.token || (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
+  const ipAddress = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket.remoteAddress;
+  const userAgent = req.get('User-Agent');
+
+  try {
+    await authService.logout(token, ipAddress, userAgent);
+  } catch (error) {
+    console.error('Error durante la revocación del token en logout:', error);
+  }
+
   res.clearCookie('token');
   res.json({ message: 'Sesión finalizada correctamente' });
 };

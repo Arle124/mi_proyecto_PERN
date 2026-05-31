@@ -9,7 +9,7 @@ Este documento describe la suite de pruebas automatizadas y herramientas de cont
 
 El proyecto cuenta con una prueba de integración interactiva y de extremo a extremo (E2E) mediante Selenium WebDriver.
 
-*   **Archivo:** `server/test-quality.js`
+*   **Archivo:** `tests/test-quality.js`
 *   **Tecnologías:** `selenium-webdriver` + Chrome Headless.
 *   **Propósito:** Validar el ciclo completo del usuario sin intervención humana.
 
@@ -23,8 +23,7 @@ El proyecto cuenta con una prueba de integración interactiva y de extremo a ext
 #### Ejecución:
 Para ejecutar la prueba de calidad (asegúrate de tener levantado el entorno con Docker o de forma local):
 ```bash
-cd server
-node test-quality.js
+node tests/test-quality.js
 ```
 
 ---
@@ -88,4 +87,58 @@ chmod +x tests/test-lockout.sh
 ```
 
 El correcto funcionamiento de esta suite de pruebas demuestra el 100% de trazabilidad de seguridad en la capa lógica.
+
+---
+
+### 6. Suite de Pentesting Automático y Resiliencia E2E
+Esta prueba simula ataques perimetrales lógicos para verificar los mecanismos de seguridad del backend ante amenazas web comunes.
+
+*   **Archivo:** `tests/test-selenium-security.js`
+*   **Tecnologías:** `selenium-webdriver` + Chrome Headless.
+*   **Propósito:** Auditar la efectividad de las defensas lógicas y cortafuegos ante Inyección SQL e inundación de peticiones.
+
+#### Cobertura de la Suite:
+1.  **Mitigación de Inyección SQL (SQLi Bypass):** Intenta inyectar payloads SQL clásicos (`' OR '1'='1`) en los campos del formulario de Login para auditar que la combinación de validación Zod y el hashing de base de datos deniegue el ingreso de forma controlada.
+2.  **Mitigación de DDoS Lógico y Fuerza Bruta:** Envía clics e inundaciones masivas en ráfagas al botón de inicio de sesión para verificar la respuesta del limitador de tasa del servidor (`express-rate-limit`), auditando que el cortafuegos perimetral retorne un código de estado `429 Too Many Requests`.
+
+#### Ejecución:
+```bash
+node tests/test-selenium-security.js
+```
+
+---
+
+### 7. Suite de Sanitización y Validación Visual E2E
+Audita minuciosamente las defensas del frontend y la usabilidad de los formularios en tiempo real, garantizando la consistencia y sanitización dinámica antes del envío de datos.
+
+*   **Archivo:** `tests/test-unsanitized-fields.js`
+*   **Tecnologías:** `selenium-webdriver` + Chrome Headless.
+*   **Propósito:** Validar que los campos de entrada no acepten datos inválidos y que las conversiones automáticas funcionen visualmente sin fricción.
+
+#### Cobertura de la Suite:
+1.  **Campos Alfabéticos:** Digita números y caracteres especiales en los nombres de usuarios y conductores, auditando que el manejador `onChange` remueva instantáneamente cualquier carácter no alfabético de la pantalla.
+2.  **Campos Numéricos y Cédula:** Intenta escribir letras y guiones en los campos de teléfono o cédula, verificando que los inputs numéricos permanezcan limpios y solo contengan dígitos.
+3.  **Inputs de Límites y Negativos:** Verifica la inyección de guiones (`-`), signos de suma (`+`) y notaciones de exponente (`e` o `E`) en los inputs numéricos (como tonelaje o consumo de ACPM), comprobando que el frontend prevenga e impida físicamente cualquier valor negativo o nulo.
+4.  **Cálculo e Inputs en Kilogramos:** Digita pesos en kilogramos (ej: `8540`) y tarifas en pesos por kilo (ej: `130`), auditando que las tarjetas del frontend muestren en tiempo real el tonelaje equivalente (`8.540 Tn`) y las tarifas calculadas por tonelada antes de la confirmación.
+
+#### Ejecución:
+```bash
+node tests/test-unsanitized-fields.js
+```
+
+---
+
+### 8. Pruebas Unitarias Atómicas de Esquemas de Validación (Backend)
+Suite de pruebas de bajo nivel para asegurar que el firewall del backend (definido mediante esquemas Zod) valide e intercepte correctamente los payloads recibidos en la API antes de tocar la base de datos.
+
+*   **Archivo:** `tests/test-schemas-unit.js`
+*   **Tecnologías:** Módulo nativo de aserciones de Node.js (`node:assert`) + **Zod**.
+*   **Propósito:** Verificar el comportamiento atómico de los esquemas Zod de conductores, vehículos y creación de usuarios ante casos de prueba válidos y extremos no válidos.
+
+#### Ejecución:
+```bash
+node tests/test-schemas-unit.js
+```
+
+El correcto funcionamiento de todas estas suites de pruebas demuestra el 100% de trazabilidad, robustez, calidad y seguridad en la plataforma Novapalma.
 

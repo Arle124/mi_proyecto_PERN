@@ -1,11 +1,13 @@
 import jwt from 'jsonwebtoken';
+import { prisma } from '../config/db.js';
 
 /**
  * Middleware de Autenticación Centralizado.
  * Como DevOps Senior, hemos migrado de 'Authorization Bearer' a 'HttpOnly Cookies'.
  * Este cambio blinda el sistema contra ataques de robo de sesión (XSS).
+ * Además, verifica que la sesión esté activa y no haya sido revocada en base de datos.
  */
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   // Intentamos extraer el token de la cookie blindada, 
   // manteniendo compatibilidad con headers para herramientas de testing (Postman/Insomnia)
   const token = req.cookies.token || (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
@@ -16,6 +18,16 @@ export const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Verificar estado de sesión activa en base de datos (Supabase)
+    const session = await prisma.refreshToken.findUnique({
+      where: { token }
+    });
+
+    if (!session || session.revoked) {
+      res.clearCookie('token');
+      return res.status(401).json({ error: 'Acceso denegado. La sesión ha sido cerrada o revocada.' });
+    }
     
     // Inyectamos el payload (id, rol) en el objeto de la petición
     // Esto es vital para la trazabilidad en la capa de servicios y auditoría

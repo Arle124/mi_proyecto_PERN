@@ -147,8 +147,8 @@ El sistema implementa una arquitectura de seguridad multicapa para cumplir con l
 | **Viajes** | `/api/viajes` | POST | `authMiddleware` | Registrar nuevo viaje (ACID). |
 | **Viajes** | `/api/viajes/:id` | PUT | `authMiddleware` | Actualizar viaje y re-calcular. |
 | **Viajes** | `/api/viajes/:id` | DELETE | `authMiddleware` + `isAdmin` | Eliminación forense de viaje. |
-| **Tarifas** | `/api/tarifas` | GET | `authMiddleware` | Consultar tarifario vigente. |
-| **Tarifas** | `/api/tarifas` | POST | `authMiddleware` + `isAdmin` | Configurar/Upsert de tarifas base. |
+| **Dashboard** | `/api/dashboard/stats` | GET | `authMiddleware` | Consultar estadísticas agregadas del mes actual para paneles y KPIs. |
+| **Finanzas** | `/api/finanzas/report` | GET | `authMiddleware` + `isAdmin` | Generar reporte consolidado de viajes filtrado por rango de fechas (tonelaje, facturación, ACPM, Ferry y márgenes de ganancia netos). |
 
 ---
 
@@ -271,4 +271,17 @@ Con el fin de elevar el estándar de calidad de Novapalma hacia un nivel empresa
 #### 16.7. Automatización de Pruebas de Extremo a Extremo (E2E)
 - Se estructuraron y ejecutaron suites de prueba automáticas de extremo a extremo utilizando **Selenium WebDriver** (`tests/test-unsanitized-fields.js`).
 - Estas pruebas simulan el flujo completo del usuario en el navegador real, auditando las defensas del sistema y asegurando que las entradas del frontend y los esquemas del backend funcionen de manera perfectamente sincronizada.
+
+#### 16.8. Escudo de Base de Datos y Manejo de Errores Semántico (`errorHandler.js`)
+- Se implementó un escudo de excepciones en el backend (`server/src/utils/errorHandler.js`) que actúa como un formateador semántico de errores.
+- **Traducción de Códigos Prisma:** Intercepta errores específicos de Prisma (como `P2002` para violaciones de campos únicos, `P2003` para fallos de integridad referencial, `P2011` para campos nulos obligatorios y `P2025` para registros no encontrados) y los traduce instantáneamente en mensajes claros y profesionales en español.
+- **Prevención de Fugas de Información (Hardening):** Evita la exposición de trazas de pila técnicas (stack traces) en inglés o detalles internos de la base de datos a clientes externos, retornando códigos HTTP semánticos (como `409 Conflict`, `400 Bad Request` o `404 Not Found`) y descripciones seguras para el usuario.
+
+#### 16.9. Formateo de Moneda Colombiano en Caliente (Separador de Miles)
+- Se desarrolló una directiva de formateo en caliente para los campos financieros del frontend.
+- Al digitar importes (como fletes o ACPM), el campo sanitiza y formatea de forma reactiva la entrada numérica agregando separadores de miles con puntos (`.`), mostrando interactivamente por ejemplo `450.000` en lugar de `450000`. Esto previene errores de lectura y digitación operativa por parte de los despachadores.
+
+#### 16.10. Interfaz de Operador Optimizada (Austeridad Visual y Seguridad)
+- Para elevar el control de acceso en la interfaz de usuario, se implementó una ocultación física condicional de las columnas de "Acciones" en las tablas de conductores y vehículos para los usuarios con el rol `OPERADOR`.
+- Esto mantiene las grillas limpias y simétricas, eliminando elementos interactivos no autorizados de la vista de operadores y asegurando que las operaciones críticas de modificación o borrado lógico queden restringidas visual y lógicamente a administradores.
 
