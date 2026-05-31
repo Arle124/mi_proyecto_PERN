@@ -623,7 +623,7 @@ const Trips = ({ isDashboard = false }) => {
                                     />
                                     <span className="input-group-text bg-light text-muted">/ kg</span>
                                   </div>
-                                  
+
                                   <div className="bg-white p-2 rounded border border-light-subtle small mt-2">
                                     <div className="d-flex justify-content-between mb-1">
                                       <span className="text-muted">Cantidad a facturar:</span>
