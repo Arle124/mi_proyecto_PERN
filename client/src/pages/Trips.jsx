@@ -554,7 +554,12 @@ const Trips = ({ isDashboard = false }) => {
 
                     {/* COSTOS FINANCIEROS REALES */}
                     <div className="col-md-6">
-                      <label className="form-label small fw-bold">Costo ACPM Real (COP)</label>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <label className="form-label small fw-bold m-0">Costo ACPM Real (COP)</label>
+                        <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 small cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, valorAcpm: localStorage.getItem('defaultAcpm') || '0' }))} title="Haga clic para aplicar el valor configurado por defecto" style={{ cursor: 'pointer', fontSize: '0.75rem' }}>
+                          Defecto: ${formatCurrencyCOP(localStorage.getItem('defaultAcpm') || '0')}
+                        </span>
+                      </div>
                       <div className="input-group">
                         <span className="input-group-text">$</span>
                         <input 
@@ -568,7 +573,12 @@ const Trips = ({ isDashboard = false }) => {
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label small fw-bold">Costo Ferry Real (COP)</label>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <label className="form-label small fw-bold m-0">Costo Ferry Real (COP)</label>
+                        <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 small cursor-pointer" onClick={() => formData.usoFerry && setFormData(prev => ({ ...prev, valorFerry: localStorage.getItem('defaultFerry') || '0' }))} title="Haga clic para aplicar el valor configurado por defecto" style={{ cursor: formData.usoFerry ? 'pointer' : 'not-allowed', opacity: formData.usoFerry ? 1 : 0.5, fontSize: '0.75rem' }}>
+                          Defecto: ${formatCurrencyCOP(localStorage.getItem('defaultFerry') || '0')}
+                        </span>
+                      </div>
                       <div className="input-group">
                         <span className="input-group-text">$</span>
                         <input 
@@ -594,7 +604,12 @@ const Trips = ({ isDashboard = false }) => {
                                 <h6 className="m-0 fw-bold mb-1">Precio por Kilogramo (Fruta)</h6>
                                 <p className="text-muted small mb-2">Ingrese el valor pactado por kilo. El sistema calculará el flete y mostrará la equivalencia corporativa.</p>
                                 <div className="mt-2">
-                                  <label className="form-label small fw-bold text-success">Precio por Kg de Fruta (COP) *</label>
+                                  <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <label className="form-label small fw-bold text-success m-0">Precio por Kg de Fruta (COP) *</label>
+                                    <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 small cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, precioKg: localStorage.getItem('defaultPriceKg') || '100' }))} title="Haga clic para aplicar el valor configurado por defecto" style={{ cursor: 'pointer', fontSize: '0.75rem' }}>
+                                      Defecto: ${formatCurrencyCOP(localStorage.getItem('defaultPriceKg') || '100')}
+                                    </span>
+                                  </div>
                                   <div className="input-group mb-2">
                                     <span className="input-group-text bg-success text-white">$</span>
                                     <input 
