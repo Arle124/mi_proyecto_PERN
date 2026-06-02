@@ -545,6 +545,7 @@ const Trips = ({ isDashboard = false }) => {
                         <option value="FRUTO">FRUTO (Fruta de Palma)</option>
                         <option value="COMPOST">COMPOST (Abono orgánico)</option>
                       </select>
+                    </div>
                     <div className="col-md-3">
                       <label className="form-label small fw-bold">Kilogramos Reales (kg) *</label>
                       <input 
