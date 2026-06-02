@@ -15,3 +15,7 @@ generate_dict.py
 *.bak.docx
 .~lock.*
 Viajes Novapalma.xlsx
+
+.VSCodeCounter
+
+mejoras.txt
