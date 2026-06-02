@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, Save, AlertCircle, X, Edit, Trash2 } from 'lucide-react';
+import { Plus, Save, AlertCircle, X, Edit, Trash2, Search, Info, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // Formateador de moneda estilo colombiano (separador de miles con punto)
@@ -24,6 +24,7 @@ const getInitialFormData = () => ({
   driverId: '',
   vehicleId: '',
   consumoAcpm: 0,
+  usoAcpm: false,
   usoFerry: false,
   porcentajeConductor: 1.00,
   valorAcpm: localStorage.getItem('defaultAcpm') || '0',
@@ -40,6 +41,8 @@ const Trips = ({ isDashboard = false }) => {
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTrip, setSelectedTrip] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
     show: false,
     title: '',
@@ -90,6 +93,16 @@ const Trips = ({ isDashboard = false }) => {
         ...formData,
         usoFerry: checked,
         valorFerry: checked ? formData.valorFerry : ''
+      });
+      return;
+    }
+
+    if (name === 'usoAcpm') {
+      setFormData({
+        ...formData,
+        usoAcpm: checked,
+        valorAcpm: checked ? formData.valorAcpm : '',
+        consumoAcpm: checked ? formData.consumoAcpm : '0'
       });
       return;
     }
@@ -206,6 +219,7 @@ const Trips = ({ isDashboard = false }) => {
       driverId: trip.driverId,
       vehicleId: trip.vehicleId,
       consumoAcpm: trip.consumoAcpm ? trip.consumoAcpm.toString() : '0',
+      usoAcpm: trip.usoAcpm || false,
       usoFerry: trip.usoFerry || false,
       porcentajeConductor: trip.porcentajeConductor ? trip.porcentajeConductor.toString() : '1.00',
       valorAcpm: trip.valorAcpm ? Math.round(parseFloat(trip.valorAcpm) || 0).toString() : '0',
@@ -245,6 +259,7 @@ const Trips = ({ isDashboard = false }) => {
         producto: formData.producto,
         tonelaje: parseFloat(formData.tonelaje) / 1000,
         consumoAcpm: parseFloat(formData.consumoAcpm) || 0,
+        usoAcpm: formData.usoAcpm,
         usoFerry: formData.usoFerry,
         porcentajeConductor: parseFloat(formData.porcentajeConductor) || 1.00,
         valorAcpm: parseFloat(formData.valorAcpm) || 0,
@@ -271,6 +286,10 @@ const Trips = ({ isDashboard = false }) => {
     }
   };
 
+  const filteredTrips = trips.filter((trip) => 
+    trip.ticket.toString().includes(searchTerm)
+  );
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -278,15 +297,27 @@ const Trips = ({ isDashboard = false }) => {
           <h4 className="fw-bold mb-1">Registro de Despachos (Viajes)</h4>
           <p className="text-muted small">Visualiza e ingresa las planillas de los conductores registradas al final del periodo.</p>
         </div>
-        {/* HIDE nuevo viaje button if integrated in the general Dashboard */}
-        {!isDashboard && (
-          <button 
-            className="btn btn-primary d-flex align-items-center gap-2"
-            onClick={handleOpenCreateModal}
-          >
-            <Plus size={20} /> Nuevo Viaje
-          </button>
-        )}
+        <div className="d-flex gap-3 align-items-center">
+          <div className="input-group" style={{ width: '260px' }}>
+            <span className="input-group-text bg-light border-0"><Search size={18} className="text-muted" /></span>
+            <input 
+              type="text" 
+              className="form-control bg-light border-0 ps-0" 
+              placeholder="Buscar por Ticket..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          {/* HIDE nuevo viaje button if integrated in the general Dashboard */}
+          {!isDashboard && (
+            <button 
+              className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+              onClick={handleOpenCreateModal}
+            >
+              <Plus size={20} /> Nuevo Viaje
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabla de Viajes */}
@@ -318,12 +349,14 @@ const Trips = ({ isDashboard = false }) => {
                     Cargando viajes registrados...
                   </td>
                 </tr>
-              ) : trips.length === 0 ? (
+              ) : filteredTrips.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin() ? 13 : 12} className="text-center py-5 text-muted">No se encontraron registros de viajes.</td>
+                  <td colSpan={isAdmin() ? 13 : 12} className="text-center py-5 text-muted">
+                    {trips.length === 0 ? 'No se encontraron registros de viajes.' : 'Ningún tiquete coincide con tu búsqueda.'}
+                  </td>
                 </tr>
               ) : (
-                trips.map((trip) => {
+                filteredTrips.map((trip) => {
                   const driverVal = Number(trip.valorConductor || 0);
                   const acpmVal = Number(trip.valorAcpm || 0);
                   const ferryVal = Number(trip.valorFerry || 0);
@@ -331,7 +364,12 @@ const Trips = ({ isDashboard = false }) => {
                   const netUtility = Number(trip.valorPago) - totalExpenses;
 
                   return (
-                    <tr key={trip.id}>
+                    <tr 
+                      key={trip.id} 
+                      onClick={() => setSelectedTrip(trip)} 
+                      style={{ cursor: 'pointer' }}
+                      className="align-middle"
+                    >
                       <td className="px-4 fw-bold text-primary">#{trip.ticket}</td>
                       <td>{new Date(trip.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
                       <td><span className="badge bg-light text-dark border">{trip.vehicle?.placa}</span></td>
@@ -359,14 +397,14 @@ const Trips = ({ isDashboard = false }) => {
                         <td className="text-end pe-4">
                           <button 
                             className="btn btn-link text-primary p-0 me-3" 
-                            onClick={() => handleEditClick(trip)} 
+                            onClick={(e) => { e.stopPropagation(); handleEditClick(trip); }} 
                             title="Editar Viaje"
                           >
                             <Edit size={16} />
                           </button>
                           <button 
                             className="btn btn-link text-danger p-0" 
-                            onClick={() => handleDelete(trip.id)} 
+                            onClick={(e) => { e.stopPropagation(); handleDelete(trip.id); }} 
                             title="Eliminar Viaje"
                           >
                             <Trash2 size={16} />
@@ -507,9 +545,7 @@ const Trips = ({ isDashboard = false }) => {
                         <option value="FRUTO">FRUTO (Fruta de Palma)</option>
                         <option value="COMPOST">COMPOST (Abono orgánico)</option>
                       </select>
-                    </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <label className="form-label small fw-bold">Kilogramos Reales (kg) *</label>
                       <input 
                         type="number" 
@@ -523,9 +559,36 @@ const Trips = ({ isDashboard = false }) => {
                         onChange={handleInputChange} 
                         required 
                       />
+                      {(() => {
+                        if (!formData.tonelaje || !formData.vehicleId) return null;
+                        const selectedVeh = vehicles.find(v => v.id === formData.vehicleId);
+                        if (!selectedVeh) return null;
+                        const weightInTons = parseFloat(formData.tonelaje) / 1000;
+                        if (weightInTons > parseFloat(selectedVeh.capacidad)) {
+                          return (
+                            <div className="text-warning small mt-1 fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.7rem', lineHeight: '1.1' }}>
+                              <AlertCircle size={12} className="flex-shrink-0" /> Excede {selectedVeh.capacidad} Ton cap.
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
-                    <div className="col-md-4">
-                      <label className="form-label small fw-bold">Consumo ACPM (Galones)</label>
+                    <div className="col-md-3 d-flex align-items-center pt-4">
+                      <div className="form-check form-switch">
+                        <input 
+                          type="checkbox" 
+                          name="usoAcpm" 
+                          className="form-check-input" 
+                          id="usoAcpmSwitch" 
+                          checked={formData.usoAcpm} 
+                          onChange={handleInputChange} 
+                        />
+                        <label className="form-check-label small fw-bold" htmlFor="usoAcpmSwitch">¿Usa ACPM?</label>
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label small fw-bold">Consumo ACPM (Gal.)</label>
                       <input 
                         type="number" 
                         step="0.1" 
@@ -533,12 +596,13 @@ const Trips = ({ isDashboard = false }) => {
                         onKeyDown={handleKeyDownPositive}
                         name="consumoAcpm" 
                         className="form-control" 
-                        placeholder="Ej: 15.0"
+                        placeholder={formData.usoAcpm ? "Ej: 15.0" : "Bloqueado"} 
                         value={formData.consumoAcpm} 
                         onChange={handleInputChange} 
+                        disabled={!formData.usoAcpm}
                       />
                     </div>
-                    <div className="col-md-4 d-flex align-items-center pt-4">
+                    <div className="col-md-3 d-flex align-items-center pt-4">
                       <div className="form-check form-switch">
                         <input 
                           type="checkbox" 
@@ -548,7 +612,7 @@ const Trips = ({ isDashboard = false }) => {
                           checked={formData.usoFerry} 
                           onChange={handleInputChange} 
                         />
-                        <label className="form-check-label small fw-bold" htmlFor="usoFerrySwitch">¿Requiere Cruce de Ferry?</label>
+                        <label className="form-check-label small fw-bold" htmlFor="usoFerrySwitch">¿Usa Ferry?</label>
                       </div>
                     </div>
 
@@ -556,7 +620,7 @@ const Trips = ({ isDashboard = false }) => {
                     <div className="col-md-6">
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <label className="form-label small fw-bold m-0">Costo ACPM Real (COP)</label>
-                        <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 small cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, valorAcpm: localStorage.getItem('defaultAcpm') || '0' }))} title="Haga clic para aplicar el valor configurado por defecto" style={{ cursor: 'pointer', fontSize: '0.75rem' }}>
+                        <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 small cursor-pointer" onClick={() => formData.usoAcpm && setFormData(prev => ({ ...prev, valorAcpm: localStorage.getItem('defaultAcpm') || '0' }))} title="Haga clic para aplicar el valor configurado por defecto" style={{ cursor: formData.usoAcpm ? 'pointer' : 'not-allowed', opacity: formData.usoAcpm ? 1 : 0.5, fontSize: '0.75rem' }}>
                           Defecto: ${formatCurrencyCOP(localStorage.getItem('defaultAcpm') || '0')}
                         </span>
                       </div>
@@ -566,9 +630,10 @@ const Trips = ({ isDashboard = false }) => {
                           type="text" 
                           name="valorAcpm" 
                           className="form-control text-end fw-semibold" 
-                          placeholder="Ej: 349.291" 
+                          placeholder={formData.usoAcpm ? "Ej: 349.291" : "Bloqueado"} 
                           value={formatCurrencyCOP(formData.valorAcpm)} 
                           onChange={handleInputChange} 
+                          disabled={!formData.usoAcpm}
                         />
                       </div>
                     </div>
@@ -764,6 +829,131 @@ const Trips = ({ isDashboard = false }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Sidebar de Detalles del Viaje (Drawer) */}
+      {selectedTrip && (
+        <>
+          <div 
+            className="details-drawer-overlay animate__animated animate__fadeIn" 
+            onClick={() => setSelectedTrip(null)}
+          ></div>
+          <div className="details-drawer open p-4">
+            <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+              <div>
+                <span className="badge bg-primary-subtle text-primary mb-1">AUDITORÍA DE DESPACHO</span>
+                <h4 className="fw-bold m-0 text-dark">Ticket #{selectedTrip.ticket}</h4>
+              </div>
+              <button 
+                className="btn btn-light rounded-circle p-2 border-0" 
+                onClick={() => setSelectedTrip(null)}
+                style={{ width: '40px', height: '40px' }}
+              >
+                <X size={20} className="text-secondary" />
+              </button>
+            </div>
+
+            <div className="flex-grow-1 overflow-auto pe-1" style={{ fontSize: '0.9rem' }}>
+              {/* Sección: Información General */}
+              <div className="card bg-light border-0 p-3 mb-3">
+                <h6 className="fw-bold mb-2 text-secondary text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Detalles de Operación</h6>
+                <div className="row g-2">
+                  <div className="col-6">
+                    <span className="text-muted small d-block">Fecha</span>
+                    <span className="fw-medium text-dark">{new Date(selectedTrip.fecha).toLocaleDateString(undefined, { timeZone: 'UTC' })}</span>
+                  </div>
+                  <div className="col-6">
+                    <span className="text-muted small d-block">Producto</span>
+                    <span className={`badge px-2 py-0.5 rounded-pill ${selectedTrip.producto === 'FRUTO' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'}`}>{selectedTrip.producto}</span>
+                  </div>
+                  <div className="col-12 mt-2">
+                    <span className="text-muted small d-block">Ruta</span>
+                    <span className="fw-semibold text-dark">{selectedTrip.origen} {selectedTrip.destino ? ` ➔ ${selectedTrip.destino}` : ''}</span>
+                  </div>
+                  <div className="col-12 mt-2">
+                    <span className="text-muted small d-block">Empresa Cliente</span>
+                    <span className="fw-medium text-dark">{selectedTrip.empresa || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección: Flota */}
+              <div className="card border-light-subtle p-3 mb-3 shadow-sm bg-white">
+                <h6 className="fw-bold mb-2 text-secondary text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Asignación de Logística</h6>
+                <div className="d-flex align-items-center gap-3 mb-3 pb-2 border-bottom">
+                  <div className="bg-primary-subtle text-primary rounded p-2 d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px' }}>
+                    <Info size={20} />
+                  </div>
+                  <div>
+                    <span className="text-muted small d-block">Vehículo</span>
+                    <span className="fw-bold text-dark">{selectedTrip.vehicle?.placa}</span>
+                    <span className="text-secondary small d-block">{selectedTrip.vehicle?.marca} ({selectedTrip.vehicle?.capacidad} Ton cap.)</span>
+                  </div>
+                </div>
+                <div className="d-flex align-items-center gap-3">
+                  <div className="bg-success-subtle text-success rounded p-2 d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px' }}>
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <span className="text-muted small d-block">Conductor</span>
+                    <span className="fw-bold text-dark">{selectedTrip.driver?.primerNombre} {selectedTrip.driver?.primerApellido}</span>
+                    <span className="text-secondary small d-block">C.C. {selectedTrip.driver?.cedula}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección: Carga y Financiero */}
+              <div className="card border-light-subtle p-3 mb-3 shadow-sm bg-white">
+                <h6 className="fw-bold mb-3 text-secondary text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Carga & Balance Económico</h6>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="text-muted">Tonelaje Total:</span>
+                  <span className="fw-semibold text-dark">{selectedTrip.tonelaje} Ton <small className="text-muted">({Number(selectedTrip.tonelaje) * 1000} Kg)</small></span>
+                </div>
+                <div className="d-flex justify-content-between align-items-center p-2 rounded mb-3 bg-success-subtle text-success">
+                  <span className="fw-bold small">FLETE (Ingreso Bruto):</span>
+                  <span className="fw-bold fs-5">${Number(selectedTrip.valorPago).toLocaleString()}</span>
+                </div>
+
+                <div className="border-top pt-2">
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="text-muted small">Gastos de Conductor ({selectedTrip.porcentajeConductor}%):</span>
+                    <span className="text-danger fw-semibold small">-${Number(selectedTrip.valorConductor).toLocaleString()}</span>
+                  </div>
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="text-muted small">Costo Combustible ACPM {selectedTrip.consumoAcpm ? `(${selectedTrip.consumoAcpm} Gal.)` : ''}:</span>
+                    <span className="text-danger fw-semibold small">-${Number(selectedTrip.valorAcpm || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="d-flex justify-content-between mb-3">
+                    <span className="text-muted small">Costo Cruce de Ferry:</span>
+                    <span className="text-danger fw-semibold small">-${Number(selectedTrip.valorFerry || 0).toLocaleString()}</span>
+                  </div>
+                  
+                  {/* Total de Gastos */}
+                  {(() => {
+                    const totalExpenses = Number(selectedTrip.valorConductor || 0) + Number(selectedTrip.valorAcpm || 0) + Number(selectedTrip.valorFerry || 0);
+                    const netUtility = Number(selectedTrip.valorPago) - totalExpenses;
+                    return (
+                      <>
+                        <div className="d-flex justify-content-between py-2 border-top border-bottom mb-3 fw-bold small text-secondary">
+                          <span>TOTAL EGRESOS OPERATIVOS:</span>
+                          <span className="text-danger">-${totalExpenses.toLocaleString()}</span>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center p-3 rounded" style={{ backgroundColor: netUtility >= 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)' }}>
+                          <span className="fw-bold" style={{ color: netUtility >= 0 ? '#10b981' : '#ef4444', fontSize: '0.8rem' }}>UTILIDAD OPERATIVA NETO:</span>
+                          <span className="fw-bold fs-5" style={{ color: netUtility >= 0 ? '#10b981' : '#ef4444' }}>${netUtility.toLocaleString()}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-3 border-top text-center text-muted" style={{ fontSize: '0.75rem' }}>
+              Registrado por: {selectedTrip.registradoPor?.primerNombre || 'Sistema'} {selectedTrip.registradoPor?.primerApellido || ''}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

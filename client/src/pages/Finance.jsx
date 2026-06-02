@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { DollarSign, Filter, Download, Table, Calendar, AlertCircle } from 'lucide-react';
+import { DollarSign, Filter, Download, Table, Calendar, AlertCircle, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const Finance = () => {
@@ -16,6 +16,7 @@ const Finance = () => {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (isAdmin()) {
@@ -52,6 +53,7 @@ const Finance = () => {
   const handleReset = () => {
     setStartDate('');
     setEndDate('');
+    setSearchTerm('');
     // We fetch without filters
     setTimeout(() => {
       fetchReport();
@@ -123,6 +125,10 @@ const Finance = () => {
     XLSX.writeFile(workbook, `reporte_financiero_novapalma_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  const filteredTrips = trips.filter(t => 
+    t.ticket.toString().includes(searchTerm)
+  );
+
   if (!isAdmin()) {
     return <div className="alert alert-danger p-3">Acceso restringido. Solo administradores.</div>;
   }
@@ -148,7 +154,7 @@ const Finance = () => {
       {/* Date Filters form - hidden during print */}
       <div className="card p-3 border-0 shadow-sm mb-4 no-print bg-white">
         <form onSubmit={handleFilter} className="row g-3 align-items-end">
-          <div className="col-md-4">
+          <div className="col-md-3">
             <label className="form-label small fw-bold text-secondary">Fecha Inicial</label>
             <div className="input-group">
               <span className="input-group-text bg-light border-0"><Calendar size={18} /></span>
@@ -160,7 +166,7 @@ const Finance = () => {
               />
             </div>
           </div>
-          <div className="col-md-4">
+          <div className="col-md-3">
             <label className="form-label small fw-bold text-secondary">Fecha Final</label>
             <div className="input-group">
               <span className="input-group-text bg-light border-0"><Calendar size={18} /></span>
@@ -172,9 +178,22 @@ const Finance = () => {
               />
             </div>
           </div>
-          <div className="col-md-4 d-flex gap-2">
+          <div className="col-md-3">
+            <label className="form-label small fw-bold text-secondary">Buscar por Tiquete</label>
+            <div className="input-group">
+              <span className="input-group-text bg-light border-0"><Search size={18} className="text-muted" /></span>
+              <input 
+                type="text" 
+                className="form-control bg-light border-0 ps-0" 
+                placeholder="Ej: 1045" 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+              />
+            </div>
+          </div>
+          <div className="col-md-3 d-flex gap-2">
             <button type="submit" className="btn btn-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2">
-              <Filter size={18} /> Filtrar Reporte
+              <Filter size={18} /> Filtrar Fechas
             </button>
             <button type="button" onClick={handleReset} className="btn btn-light border">
               Limpiar
@@ -266,7 +285,7 @@ const Finance = () => {
             <Table size={20} className="text-secondary" />
             Desglose de Despachos Auditados
           </h5>
-          <span className="badge bg-light text-dark border px-3 py-2 small">{trips.length} registros encontrados</span>
+          <span className="badge bg-light text-dark border px-3 py-2 small">{filteredTrips.length} registros encontrados</span>
         </div>
         <div className="table-responsive p-2">
           <table className="table table-hover align-middle mb-0">
@@ -294,12 +313,14 @@ const Finance = () => {
                     Cargando informe...
                   </td>
                 </tr>
-              ) : trips.length === 0 ? (
+              ) : filteredTrips.length === 0 ? (
                 <tr>
-                  <td colSpan="12" className="text-center py-5 text-muted">No se encontraron registros de viajes en el rango seleccionado.</td>
+                  <td colSpan="12" className="text-center py-5 text-muted">
+                    {trips.length === 0 ? 'No se encontraron registros de viajes en el rango seleccionado.' : 'Ningún tiquete coincide con tu búsqueda.'}
+                  </td>
                 </tr>
               ) : (
-                trips.map((t) => {
+                filteredTrips.map((t) => {
                   const driverVal = Number(t.valorConductor || 0);
                   const acpmVal = Number(t.valorAcpm || 0);
                   const ferryVal = Number(t.valorFerry || 0);

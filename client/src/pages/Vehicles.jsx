@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, Search, Truck, Save, AlertCircle, Trash2, Edit } from 'lucide-react';
+import { Plus, Search, Truck, Save, AlertCircle, Trash2, Edit, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Vehicles = () => {
@@ -10,6 +10,7 @@ const Vehicles = () => {
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [showInactive, setShowInactive] = useState(false);
   const { isAdmin } = useAuth();
   const [confirmModal, setConfirmModal] = useState({
     show: false,
@@ -33,7 +34,7 @@ const Vehicles = () => {
   const fetchVehicles = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/vehiculos');
+      const { data } = await api.get('/vehiculos?includeDeleted=true');
       setVehicles(data);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
@@ -134,6 +135,19 @@ const Vehicles = () => {
     });
   };
 
+  const handleRestore = async (id) => {
+    try {
+      await api.put(`/vehiculos/${id}`, { activo: true, deletedAt: null });
+      fetchVehicles();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error al reactivar el vehículo');
+    }
+  };
+
+
+  const displayedVehicles = showInactive 
+    ? vehicles 
+    : vehicles.filter(v => v.activo);
 
   return (
     <div>
@@ -142,12 +156,26 @@ const Vehicles = () => {
           <h4 className="fw-bold mb-1">Flota de Vehículos</h4>
           <p className="text-muted small">Administra los camiones y su estado operativo</p>
         </div>
-        <button 
-          className="btn btn-primary d-flex align-items-center gap-2"
-          onClick={handleOpenCreateModal}
-        >
-          <Plus size={20} /> Nuevo Vehículo
-        </button>
+        <div className="d-flex gap-3 align-items-center">
+          <div className="form-check form-switch m-0 d-flex align-items-center gap-2">
+            <input 
+              type="checkbox" 
+              className="form-check-input cursor-pointer" 
+              id="showInactiveSwitch" 
+              checked={showInactive} 
+              onChange={(e) => setShowInactive(e.target.checked)} 
+            />
+            <label className="form-check-label small fw-bold text-secondary cursor-pointer" htmlFor="showInactiveSwitch">Mostrar Inactivos</label>
+          </div>
+          {isAdmin() && (
+            <button 
+              className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+              onClick={handleOpenCreateModal}
+            >
+              <Plus size={20} /> Nuevo Vehículo
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card border-0 shadow-sm">
@@ -165,10 +193,10 @@ const Vehicles = () => {
             <tbody>
               {loading ? (
                 <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5">Cargando flota...</td></tr>
-              ) : vehicles.length === 0 ? (
-                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5 text-muted">No hay vehículos registrados.</td></tr>
+              ) : displayedVehicles.length === 0 ? (
+                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5 text-muted">No se encontraron vehículos.</td></tr>
               ) : (
-                vehicles.map((v) => (
+                displayedVehicles.map((v) => (
                   <tr key={v.id}>
                     <td className="px-4"><span className="badge bg-white text-primary border border-primary px-3 py-2">{v.placa}</span></td>
                     <td><div className="fw-bold">{v.marca}</div><div className="text-muted small">{v.modelo}</div></td>
@@ -186,9 +214,15 @@ const Vehicles = () => {
                         <button className="btn btn-link text-primary p-0 me-3" onClick={() => handleEditClick(v)} title="Editar Vehículo">
                           <Edit size={18} />
                         </button>
-                        <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(v.id)} title="Desactivar Vehículo">
-                          <Trash2 size={18} />
-                        </button>
+                        {v.activo ? (
+                          <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(v.id)} title="Desactivar Vehículo">
+                            <Trash2 size={18} />
+                          </button>
+                        ) : (
+                          <button className="btn btn-link text-success p-0" onClick={() => handleRestore(v.id)} title="Reactivar Vehículo">
+                            <RotateCcw size={18} />
+                          </button>
+                        )}
                       </td>
                     )}
                   </tr>

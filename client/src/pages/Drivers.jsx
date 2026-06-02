@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Plus, UserCircle, Save, Trash2, Phone, CreditCard, Edit } from 'lucide-react';
+import { Plus, UserCircle, Save, Trash2, Phone, CreditCard, Edit, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Drivers = () => {
@@ -10,6 +10,7 @@ const Drivers = () => {
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [showInactive, setShowInactive] = useState(false);
   const { isAdmin } = useAuth();
   const [confirmModal, setConfirmModal] = useState({
     show: false,
@@ -34,7 +35,7 @@ const Drivers = () => {
   const fetchDrivers = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/conductores');
+      const { data } = await api.get('/conductores?includeDeleted=true');
       setDrivers(data);
     } catch (error) {
       console.error('Error fetching drivers:', error);
@@ -121,6 +122,19 @@ const Drivers = () => {
     });
   };
 
+  const handleRestore = async (id) => {
+    try {
+      await api.put(`/conductores/${id}`, { activo: true, deletedAt: null });
+      fetchDrivers();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error al reactivar el conductor');
+    }
+  };
+
+
+  const displayedDrivers = showInactive 
+    ? drivers 
+    : drivers.filter(d => d.activo);
 
   return (
     <div>
@@ -129,12 +143,26 @@ const Drivers = () => {
           <h4 className="fw-bold mb-1">Cuerpo de Conductores</h4>
           <p className="text-muted small">Gestión de personal operativo y contacto</p>
         </div>
-        <button 
-          className="btn btn-primary d-flex align-items-center gap-2"
-          onClick={handleOpenCreateModal}
-        >
-          <Plus size={20} /> Nuevo Conductor
-        </button>
+        <div className="d-flex gap-3 align-items-center">
+          <div className="form-check form-switch m-0 d-flex align-items-center gap-2">
+            <input 
+              type="checkbox" 
+              className="form-check-input cursor-pointer" 
+              id="showInactiveSwitch" 
+              checked={showInactive} 
+              onChange={(e) => setShowInactive(e.target.checked)} 
+            />
+            <label className="form-check-label small fw-bold text-secondary cursor-pointer" htmlFor="showInactiveSwitch">Mostrar Inactivos</label>
+          </div>
+          {isAdmin() && (
+            <button 
+              className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+              onClick={handleOpenCreateModal}
+            >
+              <Plus size={20} /> Nuevo Conductor
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card border-0 shadow-sm">
@@ -152,10 +180,10 @@ const Drivers = () => {
             <tbody>
               {loading ? (
                 <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5">Cargando conductores...</td></tr>
-              ) : drivers.length === 0 ? (
-                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5 text-muted">No hay conductores registrados.</td></tr>
+              ) : displayedDrivers.length === 0 ? (
+                <tr><td colSpan={isAdmin() ? 5 : 4} className="text-center py-5 text-muted">No se encontraron conductores.</td></tr>
               ) : (
-                drivers.map((d) => (
+                displayedDrivers.map((d) => (
                   <tr key={d.id}>
                     <td className="px-4 fw-bold text-primary">{d.cedula}</td>
                     <td>{d.primerNombre} {d.segundoNombre} {d.primerApellido} {d.segundoApellido}</td>
@@ -170,9 +198,15 @@ const Drivers = () => {
                         <button className="btn btn-link text-primary p-0 me-3" onClick={() => handleEditClick(d)} title="Editar Conductor">
                           <Edit size={18} />
                         </button>
-                        <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(d.id)} title="Desactivar Conductor">
-                          <Trash2 size={18} />
-                        </button>
+                        {d.activo ? (
+                          <button className="btn btn-link text-danger p-0" onClick={() => handleDelete(d.id)} title="Desactivar Conductor">
+                            <Trash2 size={18} />
+                          </button>
+                        ) : (
+                          <button className="btn btn-link text-success p-0" onClick={() => handleRestore(d.id)} title="Reactivar Conductor">
+                            <RotateCcw size={18} />
+                          </button>
+                        )}
                       </td>
                     )}
                   </tr>
