@@ -12,6 +12,7 @@ export const tripSchema = z.object({
   tonelaje: z.number().positive('El tonelaje debe ser positivo'),
   valorPago: z.number().positive('El valor del flete debe ser un número positivo'),
   consumoAcpm: z.number().nonnegative().optional().nullable(),
+  usoAcpm: z.boolean().optional().default(false),
   usoFerry: z.boolean().optional().default(false),
   porcentajeConductor: z.number().nonnegative().optional().nullable(),
   valorConductor: z.number().nonnegative().optional().nullable(),

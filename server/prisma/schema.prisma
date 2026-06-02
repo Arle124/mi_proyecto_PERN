@@ -126,6 +126,7 @@ model Trip {
   tonelaje         Decimal     @db.Decimal(10, 3)
   valorPago        Decimal     @db.Decimal(12, 2)
   consumoAcpm      Decimal?    @db.Decimal(8, 3)
+  usoAcpm          Boolean     @default(false)
   usoFerry         Boolean     @default(false)
 
   // Nuevos campos financieros y de ruta para coincidir con la planilla Excel

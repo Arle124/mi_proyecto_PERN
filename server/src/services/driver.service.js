@@ -60,7 +60,10 @@ export const createDriver = async (driverData, userId = null) => {
 /**
  * Obtiene todos los conductores activos.
  */
-export const getAllDrivers = async () => {
+export const getAllDrivers = async (includeDeleted = false) => {
+  if (includeDeleted) {
+    return await prisma.driver.findMany();
+  }
   return await prisma.driver.findMany({
     where: { deletedAt: null }
   });

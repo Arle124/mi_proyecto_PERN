@@ -46,6 +46,7 @@ export const createTrip = async (tripData, userId) => {
         tonelaje: tripData.tonelaje,
         valorPago: valorPago,
         consumoAcpm: tripData.consumoAcpm,
+        usoAcpm: tripData.usoAcpm || false,
         usoFerry: tripData.usoFerry || false,
         porcentajeConductor: pct,
         valorConductor: valorConductor,
@@ -182,7 +183,7 @@ export const updateTrip = async (id, updateData, userId) => {
 };
 
 /**
- * Realiza un Soft Delete del viaje.
+ * Realiza un Soft Delete(eliminación lógica) del viaje.
  */
 export const deleteTrip = async (id, userId) => {
   return await prisma.$transaction(async (tx) => {

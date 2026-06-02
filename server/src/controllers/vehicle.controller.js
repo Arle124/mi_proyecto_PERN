@@ -32,7 +32,8 @@ export const create = async (req, res) => {
  */
 export const getAll = async (req, res) => {
   try {
-    const vehicles = await vehicleService.getAllVehicles();
+    const includeDeleted = req.query.includeDeleted === 'true';
+    const vehicles = await vehicleService.getAllVehicles(includeDeleted);
     res.json(vehicles);
   } catch (error) {
     const { status, message } = formatError(error);
