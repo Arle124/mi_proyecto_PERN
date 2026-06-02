@@ -6,6 +6,38 @@ import * as auditService from './audit.service.js';
  */
 export const createVehicle = async (vehicleData, userId = null) => {
   return await prisma.$transaction(async (tx) => {
+    const existingVehicle = await tx.vehicle.findUnique({
+      where: { placa: vehicleData.placa.toUpperCase() }
+    });
+
+    if (existingVehicle) {
+      if (!existingVehicle.activo) {
+        const reactivatedVehicle = await tx.vehicle.update({
+          where: { id: existingVehicle.id },
+          data: {
+            marca: vehicleData.marca,
+            modelo: vehicleData.modelo,
+            capacidad: vehicleData.capacidad,
+            estado: vehicleData.estado || 'DISPONIBLE',
+            activo: true,
+            deletedAt: null
+          }
+        });
+
+        await auditService.logAudit({
+          userId,
+          action: 'UPDATE',
+          entity: 'Vehicle',
+          entityId: reactivatedVehicle.id,
+          oldValues: existingVehicle,
+          newValues: reactivatedVehicle
+        }, tx);
+
+        return reactivatedVehicle;
+      }
+      throw new Error('Ya existe un vehículo registrado con esta placa');
+    }
+
     const newVehicle = await tx.vehicle.create({
       data: {
         placa: vehicleData.placa.toUpperCase(),
@@ -32,7 +64,10 @@ export const createVehicle = async (vehicleData, userId = null) => {
 /**
  * Obtiene todos los vehículos activos.
  */
-export const getAllVehicles = async () => {
+export const getAllVehicles = async (includeDeleted = false) => {
+  if (includeDeleted) {
+    return await prisma.vehicle.findMany();
+  }
   return await prisma.vehicle.findMany({
     where: { deletedAt: null }
   });
