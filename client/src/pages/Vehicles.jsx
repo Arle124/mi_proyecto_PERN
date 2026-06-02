@@ -203,10 +203,11 @@ const Vehicles = () => {
                     <td>{v.capacidad} Ton</td>
                     <td>
                       <span className={`badge-status ${
+                        !v.activo ? 'bg-danger text-white' :
                         v.estado === 'DISPONIBLE' ? 'bg-success text-white' : 
                         v.estado === 'EN_VIAJE' ? 'bg-info text-white' : 'bg-warning text-dark'
                       }`}>
-                        {v.estado}
+                        {v.activo ? v.estado : 'INACTIVO'}
                       </span>
                     </td>
                     {isAdmin() && (
