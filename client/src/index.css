@@ -446,7 +446,30 @@ body {
     width: 100%;
     right: -100%;
   }
+
 }
+
+/* Validación en caliente de inputs */
+.form-control.is-invalid, 
+.form-select.is-invalid {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important; /* Rojo sutil en modo claro */
+}
+
+[data-theme='dark'] .form-control.is-invalid, 
+[data-theme='dark'] .form-select.is-invalid {
+  border-color: #ef4444 !important;
+  background-color: #1e1b1b !important; /* Rojo sutil en modo oscuro */
+}
+
+.invalid-feedback {
+  display: block;
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
 
 
 

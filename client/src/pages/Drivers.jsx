@@ -28,6 +28,44 @@ const Drivers = () => {
     telefono: ''
   });
 
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const validateField = (name, value) => {
+    let error = '';
+    switch (name) {
+      case 'cedula':
+        if (!value) {
+          error = 'La cédula es requerida';
+        } else if (value.length < 8 || value.length > 10) {
+          error = 'La cédula debe tener entre 8 y 10 dígitos';
+        }
+        break;
+      case 'primerNombre':
+        if (!value.trim()) {
+          error = 'El primer nombre es requerido';
+        } else if (value.trim().length < 2) {
+          error = 'El nombre debe tener al menos 2 letras';
+        }
+        break;
+      case 'primerApellido':
+        if (!value.trim()) {
+          error = 'El primer apellido es requerido';
+        } else if (value.trim().length < 2) {
+          error = 'El apellido debe tener al menos 2 letras';
+        }
+        break;
+      case 'telefono':
+        if (value && (value.length !== 10 || !value.startsWith('3'))) {
+          error = 'El teléfono debe tener 10 dígitos y empezar con 3';
+        }
+        break;
+      default:
+        break;
+    }
+    return error;
+  };
+
   useEffect(() => {
     fetchDrivers();
   }, []);
@@ -46,22 +84,31 @@ const Drivers = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let finalValue = value;
     
     // Sanitización en caliente de cédula y teléfono (solo números)
     if (name === 'cedula' || name === 'telefono') {
-      const numericVal = value.replace(/\D/g, '');
-      setFormData({ ...formData, [name]: numericVal });
-      return;
+      finalValue = value.replace(/\D/g, '');
+    } else if (['primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido'].includes(name)) {
+      // Sanitización en caliente de nombres (solo letras y espacios)
+      finalValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     }
     
-    // Sanitización en caliente de nombres (solo letras y espacios)
-    if (['primerNombre', 'segundoNombre', 'primerApellido', 'segundoApellido'].includes(name)) {
-      const alphaVal = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-      setFormData({ ...formData, [name]: alphaVal });
-      return;
+    const newFormData = { ...formData, [name]: finalValue };
+    setFormData(newFormData);
+
+    // Si ya ha sido tocado, validar en caliente
+    if (touched[name]) {
+      const fieldError = validateField(name, finalValue);
+      setErrors(prev => ({ ...prev, [name]: fieldError }));
     }
-    
-    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const fieldError = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: fieldError }));
   };
 
   const handleOpenCreateModal = () => {
@@ -69,6 +116,8 @@ const Drivers = () => {
     setEditingId(null);
     setError('');
     setFormData({ cedula: '', primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '', telefono: '' });
+    setErrors({});
+    setTouched({});
     setShowModal(true);
   };
 
@@ -84,12 +133,34 @@ const Drivers = () => {
       segundoApellido: driver.segundoApellido || '',
       telefono: driver.telefono || ''
     });
+    setErrors({});
+    setTouched({});
     setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Validar todos los campos antes de enviar
+    const validationErrors = {};
+    Object.keys(formData).forEach(key => {
+      const err = validateField(key, formData[key]);
+      if (err) validationErrors[key] = err;
+    });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      // Marcar todos como tocados para que se muestre el error visual
+      const allTouched = {};
+      Object.keys(formData).forEach(key => {
+        allTouched[key] = true;
+      });
+      setTouched(allTouched);
+      setError('Por favor, corrige los errores en el formulario antes de guardar.');
+      return;
+    }
+
     try {
       if (isEditing) {
         await api.put(`/conductores/${editingId}`, formData);
@@ -101,6 +172,8 @@ const Drivers = () => {
       setFormData({ cedula: '', primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '', telefono: '' });
       setIsEditing(false);
       setEditingId(null);
+      setErrors({});
+      setTouched({});
     } catch (error) {
       setError(error.response?.data?.error || 'Error al guardar el conductor');
     }
@@ -234,27 +307,87 @@ const Drivers = () => {
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Cédula</label>
-                      <input type="text" name="cedula" className="form-control" value={formData.cedula} onChange={handleInputChange} required />
+                      <input 
+                        type="text" 
+                        name="cedula" 
+                        className={`form-control ${touched.cedula && errors.cedula ? 'is-invalid' : ''}`} 
+                        value={formData.cedula} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.cedula && errors.cedula && (
+                        <div className="invalid-feedback">{errors.cedula}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Teléfono</label>
-                      <input type="text" name="telefono" className="form-control" value={formData.telefono} onChange={handleInputChange} />
+                      <input 
+                        type="text" 
+                        name="telefono" 
+                        className={`form-control ${touched.telefono && errors.telefono ? 'is-invalid' : ''}`} 
+                        value={formData.telefono} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.telefono && errors.telefono && (
+                        <div className="invalid-feedback">{errors.telefono}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Primer Nombre</label>
-                      <input type="text" name="primerNombre" className="form-control" value={formData.primerNombre} onChange={handleInputChange} required />
+                      <input 
+                        type="text" 
+                        name="primerNombre" 
+                        className={`form-control ${touched.primerNombre && errors.primerNombre ? 'is-invalid' : ''}`} 
+                        value={formData.primerNombre} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.primerNombre && errors.primerNombre && (
+                        <div className="invalid-feedback">{errors.primerNombre}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Segundo Nombre</label>
-                      <input type="text" name="segundoNombre" className="form-control" value={formData.segundoNombre} onChange={handleInputChange} />
+                      <input 
+                        type="text" 
+                        name="segundoNombre" 
+                        className={`form-control ${touched.segundoNombre && errors.segundoNombre ? 'is-invalid' : ''}`} 
+                        value={formData.segundoNombre} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.segundoNombre && errors.segundoNombre && (
+                        <div className="invalid-feedback">{errors.segundoNombre}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Primer Apellido</label>
-                      <input type="text" name="primerApellido" className="form-control" value={formData.primerApellido} onChange={handleInputChange} required />
+                      <input 
+                        type="text" 
+                        name="primerApellido" 
+                        className={`form-control ${touched.primerApellido && errors.primerApellido ? 'is-invalid' : ''}`} 
+                        value={formData.primerApellido} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.primerApellido && errors.primerApellido && (
+                        <div className="invalid-feedback">{errors.primerApellido}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Segundo Apellido</label>
-                      <input type="text" name="segundoApellido" className="form-control" value={formData.segundoApellido} onChange={handleInputChange} />
+                      <input 
+                        type="text" 
+                        name="segundoApellido" 
+                        className={`form-control ${touched.segundoApellido && errors.segundoApellido ? 'is-invalid' : ''}`} 
+                        value={formData.segundoApellido} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.segundoApellido && errors.segundoApellido && (
+                        <div className="invalid-feedback">{errors.segundoApellido}</div>
+                      )}
                     </div>
                   </div>
                 </div>

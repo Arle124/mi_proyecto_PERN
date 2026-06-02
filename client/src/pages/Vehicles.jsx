@@ -27,6 +27,51 @@ const Vehicles = () => {
     estado: 'DISPONIBLE'
   });
 
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const validateField = (name, value) => {
+    let error = '';
+    const strVal = String(value || '').trim();
+
+    switch (name) {
+      case 'placa':
+        if (!strVal) {
+          error = 'La placa es requerida';
+        } else if (strVal.length !== 6) {
+          error = 'La placa debe tener exactamente 6 caracteres';
+        }
+        break;
+      case 'capacidad':
+        if (!strVal) {
+          error = 'La capacidad es requerida';
+        } else {
+          const capNum = parseFloat(strVal);
+          if (isNaN(capNum) || capNum <= 0) {
+            error = 'La capacidad debe ser un número mayor a 0';
+          }
+        }
+        break;
+      case 'marca':
+        if (!strVal) {
+          error = 'La marca es requerida';
+        } else if (strVal.length < 2) {
+          error = 'La marca debe tener al menos 2 caracteres';
+        }
+        break;
+      case 'modelo':
+        if (!strVal) {
+          error = 'El modelo es requerido';
+        } else if (strVal.length < 2) {
+          error = 'El modelo debe tener al menos 2 caracteres';
+        }
+        break;
+      default:
+        break;
+    }
+    return error;
+  };
+
   useEffect(() => {
     fetchVehicles();
   }, []);
@@ -48,33 +93,39 @@ const Vehicles = () => {
    */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let finalValue = value;
     
     // Sanitización en caliente de placa (remover no-alfanuméricos, forzar mayúsculas y máximo 6 caracteres)
     if (name === 'placa') {
-      const sanitizedPlaca = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
-      setFormData({ ...formData, placa: sanitizedPlaca });
-      return;
-    }
-    
-    // Sanitización en caliente de capacidad (solo números y un único punto decimal)
-    if (name === 'capacidad') {
+      finalValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+    } else if (name === 'capacidad') {
+      // Sanitización en caliente de capacidad (solo números y un único punto decimal)
       let numericDecimal = value.replace(/[^0-9.]/g, '');
       const parts = numericDecimal.split('.');
       if (parts.length > 2) {
         numericDecimal = `${parts[0]}.${parts.slice(1).join('')}`;
       }
-      setFormData({ ...formData, capacidad: numericDecimal });
-      return;
+      finalValue = numericDecimal;
+    } else if (name === 'marca' || name === 'modelo') {
+      // Sanitización de marca y modelo (solo caracteres limpios)
+      finalValue = value.replace(/[^a-zA-Z0-9\s.-]/g, '');
     }
     
-    // Sanitización de marca y modelo (solo caracteres limpios)
-    if (name === 'marca' || name === 'modelo') {
-      const cleanVal = value.replace(/[^a-zA-Z0-9\s.-]/g, '');
-      setFormData({ ...formData, [name]: cleanVal });
-      return;
+    const newFormData = { ...formData, [name]: finalValue };
+    setFormData(newFormData);
+
+    // Si ya ha sido tocado, validar en caliente
+    if (touched[name]) {
+      const fieldError = validateField(name, finalValue);
+      setErrors(prev => ({ ...prev, [name]: fieldError }));
     }
-    
-    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const fieldError = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: fieldError }));
   };
 
   const handleOpenCreateModal = () => {
@@ -82,6 +133,8 @@ const Vehicles = () => {
     setEditingId(null);
     setError('');
     setFormData({ placa: '', marca: '', modelo: '', capacidad: '', estado: 'DISPONIBLE' });
+    setErrors({});
+    setTouched({});
     setShowModal(true);
   };
 
@@ -96,12 +149,37 @@ const Vehicles = () => {
       capacidad: vehicle.capacidad,
       estado: vehicle.estado
     });
+    setErrors({});
+    setTouched({});
     setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Validar todos los campos antes de enviar
+    const validationErrors = {};
+    Object.keys(formData).forEach(key => {
+      // No validamos estado porque es un select predeterminado
+      if (key !== 'estado') {
+        const err = validateField(key, formData[key]);
+        if (err) validationErrors[key] = err;
+      }
+    });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      // Marcar todos como tocados para que se muestre el error visual
+      const allTouched = {};
+      Object.keys(formData).forEach(key => {
+        allTouched[key] = true;
+      });
+      setTouched(allTouched);
+      setError('Por favor, corrige los errores en el formulario antes de guardar.');
+      return;
+    }
+
     try {
       const payload = { ...formData, capacidad: parseFloat(formData.capacidad) };
       if (isEditing) {
@@ -114,6 +192,8 @@ const Vehicles = () => {
       setFormData({ placa: '', marca: '', modelo: '', capacidad: '', estado: 'DISPONIBLE' });
       setIsEditing(false);
       setEditingId(null);
+      setErrors({});
+      setTouched({});
     } catch (error) {
       setError(error.response?.data?.error || 'Error al guardar el vehículo');
     }
@@ -251,19 +331,60 @@ const Vehicles = () => {
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Placa</label>
-                      <input type="text" name="placa" className="form-control" placeholder="ABC123" value={formData.placa} onChange={handleInputChange} required />
+                      <input 
+                        type="text" 
+                        name="placa" 
+                        className={`form-control ${touched.placa && errors.placa ? 'is-invalid' : ''}`} 
+                        placeholder="ABC123" 
+                        value={formData.placa} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.placa && errors.placa && (
+                        <div className="invalid-feedback">{errors.placa}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Capacidad (Ton)</label>
-                      <input type="number" step="0.1" name="capacidad" className="form-control" value={formData.capacidad} onChange={handleInputChange} required />
+                      <input 
+                        type="text" 
+                        name="capacidad" 
+                        className={`form-control ${touched.capacidad && errors.capacidad ? 'is-invalid' : ''}`} 
+                        value={formData.capacidad} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.capacidad && errors.capacidad && (
+                        <div className="invalid-feedback">{errors.capacidad}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Marca</label>
-                      <input type="text" name="marca" className="form-control" value={formData.marca} onChange={handleInputChange} required />
+                      <input 
+                        type="text" 
+                        name="marca" 
+                        className={`form-control ${touched.marca && errors.marca ? 'is-invalid' : ''}`} 
+                        value={formData.marca} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.marca && errors.marca && (
+                        <div className="invalid-feedback">{errors.marca}</div>
+                      )}
                     </div>
                     <div className="col-md-6">
                       <label className="form-label small fw-bold">Modelo</label>
-                      <input type="text" name="modelo" className="form-control" value={formData.modelo} onChange={handleInputChange} required />
+                      <input 
+                        type="text" 
+                        name="modelo" 
+                        className={`form-control ${touched.modelo && errors.modelo ? 'is-invalid' : ''}`} 
+                        value={formData.modelo} 
+                        onChange={handleInputChange} 
+                        onBlur={handleBlur} 
+                      />
+                      {touched.modelo && errors.modelo && (
+                        <div className="invalid-feedback">{errors.modelo}</div>
+                      )}
                     </div>
                   </div>
                 </div>
