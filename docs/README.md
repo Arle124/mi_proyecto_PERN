@@ -28,5 +28,9 @@ Bienvenido al directorio central de documentación de **Novapalma**. Aquí encon
     *   Despliegue automatizado con **Docker Compose** en un solo comando (Recomendado).
     *   Guía de inicio en desarrollo local clásico paso a paso.
 
+5.  👉 **[Modelo de Calidad ISO/IEC 25010 (ISO_25010_QUALITY_MODEL.md)](./ISO_25010_QUALITY_MODEL.md)**
+    *   Evaluación y mapeo de las 8 características de calidad de software del estándar SQuaRE.
+    *   Detalle técnico del nivel de cumplimiento (Seguridad, Mantenibilidad, Usabilidad, etc.) en el stack PERN.
+
 ---
 *Directorio oficial de sustentación técnica de Ingeniería de Software — Novapalma Logística.*
