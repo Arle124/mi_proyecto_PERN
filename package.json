@@ -1,0 +1,15 @@
+{
+  "name": "mi-proyecto-pern-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Auditorías de seguridad y pruebas E2E",
+  "main": "test-selenium-security.js",
+  "scripts": {
+    "test:ux": "node tests/test-selenium-security.js",
+    "test:api": "node tests/test-security-hardcore.js"
+  },
+  "devDependencies": {
+    "axios": "^1.17.0",
+    "selenium-webdriver": "^4.44.0"
+  }
+}

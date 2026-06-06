@@ -50,14 +50,28 @@ app.use(cors({
 // original detrás de múltiples balanceadores (ej. Cloudflare + Render Routing). Evita que el
 // rate limiter bloquee por error a toda la flota compartiendo la IP interna del balanceador.
 app.set('trust proxy', true); 
-const limiter = rateLimit({
+
+// Limitador exclusivo para el Login (Previene Fuerza Bruta en contraseñas)
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // Ventana de 15 minutos
-  max: process.env.NODE_ENV === 'production' ? 100 : 2000, // 2000 peticiones en desarrollo para evitar bloqueos por refrescos/HMR
-  message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.',
+  max: 15, // Máximo 15 intentos de login por IP cada 15 minutos
+  message: 'Demasiados intentos de inicio de sesión desde esta IP. Por favor intente de nuevo en 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api/', limiter);
+
+// Limitador general para el resto de la API (Navegación y consultas)
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // Ventana de 1 minuto
+  max: process.env.NODE_ENV === 'production' ? 250 : 1000, // 250 en producción, 1000 en desarrollo (evita bloqueos de HMR/refrescos)
+  message: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde (Límite temporal de 1 minuto activo).',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Aplicar políticas por endpoints
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/', apiLimiter);
 
 /**
  * ============================================================
