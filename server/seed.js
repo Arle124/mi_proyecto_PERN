@@ -3,17 +3,23 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Iniciando poblamiento y saneamiento de base de datos...');
+  console.log('🌱 Iniciando poblamiento y saneamiento de base de datos de producción...');
 
-  // 0. Saneamiento Completo (Vaciado en orden de restricciones)
+  // 1. Limpieza de base de datos (Vaciado en cascada para evitar colisión de claves externas)
   console.log('🧹 Limpiando base de datos (eliminando registros previos)...');
   await prisma.refreshToken.deleteMany();
   await prisma.auditLog.deleteMany();
@@ -22,155 +28,286 @@ async function main() {
   await prisma.driver.deleteMany();
   await prisma.user.deleteMany();
 
-  // 1. Crear Administrador Inicial
+  // 2. Crear Usuarios reales
+  console.log('👥 Creando usuarios administrativos y operadores reales...');
+  
   const adminPassword = await bcrypt.hash('AdminNovapalma2026!', 10);
   const admin = await prisma.user.create({
     data: {
-      primerNombre: 'Admin',
-      primerApellido: 'Novapalma',
+      primerNombre: 'Sandra',
+      primerApellido: 'Villamizar',
       correo: 'admin@novapalma.com',
       password: adminPassword,
       rol: 'ADMIN',
       activo: true
-    },
+    }
   });
-  console.log(`👤 Usuario Admin Creado: ${admin.correo}`);
+  console.log(`👤 Administradora Sandra Villamizar Creada (${admin.correo})`);
 
-  // 2. Crear Operador Inicial
-  const operatorPassword = await bcrypt.hash('OperadorNovapalma2026!', 10);
+  const op1Password = await bcrypt.hash('OperadorNovapalma2026!', 10);
   const operator = await prisma.user.create({
     data: {
-      primerNombre: 'Operador',
-      primerApellido: 'Logística',
+      primerNombre: 'Andrés',
+      primerApellido: 'Gómez',
       correo: 'operador@novapalma.com',
-      password: operatorPassword,
+      password: op1Password,
       rol: 'OPERADOR',
       activo: true
-    },
+    }
   });
-  console.log(`👤 Usuario Operador Creado: ${operator.correo}`);
+  console.log(`👤 Operador Andrés Gómez Creado (${operator.correo})`);
 
-  // 3. Crear Conductores de Prueba
-  console.log('👨‍✈️ Creando pool de 5 conductores profesionales...');
+  const op2Password = await bcrypt.hash('CarlosPerez2026!', 10);
+  const operator2 = await prisma.user.create({
+    data: {
+      primerNombre: 'Carlos',
+      primerApellido: 'Pérez',
+      correo: 'carlos.perez@novapalma.com',
+      password: op2Password,
+      rol: 'OPERADOR',
+      activo: true
+    }
+  });
+  console.log(`👤 Operador Carlos Pérez Creado (${operator2.correo})`);
+
+  // 3. Crear Conductores reales del pool del Excel
+  console.log('👨‍✈️ Creando pool de conductores profesionales reales...');
   const driversData = [
-    { cedula: '123456789', primerNombre: 'Juan', primerApellido: 'Pérez', telefono: '3001234567' },
-    { cedula: '987654321', primerNombre: 'Carlos', primerApellido: 'Rodríguez', telefono: '3109876543' },
-    { cedula: '456789123', primerNombre: 'Mario', primerApellido: 'Gómez', telefono: '3154567890' },
-    { cedula: '789123456', primerNombre: 'Luis', primerApellido: 'Martínez', telefono: '3207891234' },
-    { cedula: '321654987', primerNombre: 'Jorge', primerApellido: 'Hernando', telefono: '3113216549' }
+    { key: 'LUIS ALBERTO RAPALINO', primerNombre: 'LUIS', segundoNombre: 'ALBERTO', primerApellido: 'RAPALINO', cedula: '1098654321', telefono: '3007418529' },
+    { key: 'YEFERSON PARRA', primerNombre: 'YEFERSON', segundoNombre: null, primerApellido: 'PARRA', cedula: '1097564738', telefono: '3109283746' },
+    { key: 'ARMANDO', primerNombre: 'ARMANDO', segundoNombre: null, primerApellido: 'DÍAZ', cedula: '1096123456', telefono: '3156291837' },
+    { key: 'JESUS ARENA', primerNombre: 'JESÚS', segundoNombre: null, primerApellido: 'ARENAS', cedula: '1095987654', telefono: '3205739182' },
+    { key: 'STIVEN', primerNombre: 'STIVEN', segundoNombre: null, primerApellido: 'ALARCÓN', cedula: '1094365782', telefono: '3114829103' },
+    { key: 'JIMMY RODRIGUEZ', primerNombre: 'JIMMY', segundoNombre: null, primerApellido: 'RODRÍGUEZ', cedula: '1093192837', telefono: '3128471920' },
+    { key: 'IMAR ASCANIO', primerNombre: 'IMAR', segundoNombre: null, primerApellido: 'ASCANIO', cedula: '1092738495', telefono: '3139582716' },
+    { key: 'YORDAN', primerNombre: 'YORDAN', segundoNombre: null, primerApellido: 'CASTILLO', cedula: '1091564738', telefono: '3146372819' }
   ];
 
+  const driverMap = {};
   const drivers = [];
-  for (const driverVal of driversData) {
-    const d = await prisma.driver.create({ data: driverVal });
+  for (const item of driversData) {
+    const d = await prisma.driver.create({
+      data: {
+        cedula: item.cedula,
+        primerNombre: item.primerNombre,
+        segundoNombre: item.segundoNombre,
+        primerApellido: item.primerApellido,
+        telefono: item.telefono,
+        activo: true
+      }
+    });
+    driverMap[item.key] = d.id;
     drivers.push(d);
   }
-  console.log(`✅ 5 Conductores registrados.`);
+  console.log(`✅ ${driversData.length} Conductores registrados.`);
 
-  // 4. Crear Vehículos de Prueba
-  console.log('🚚 Creando pool de 5 vehículos de flota pesada...');
+  // 4. Crear Vehículos reales con datos extraídos y capacidades colombianas
+  console.log('🚚 Creando pool de vehículos reales con placas y modelos...');
   const vehiclesData = [
-    { placa: 'AAA001', marca: 'Hino', modelo: 'Dutro 2024', capacidad: 5.5, estado: 'DISPONIBLE' },
-    { placa: 'BBB002', marca: 'Chevrolet', modelo: 'FVR 2023', capacidad: 10.0, estado: 'DISPONIBLE' },
-    { placa: 'CCC003', marca: 'Kenworth', modelo: 'T800 2022', capacidad: 17.5, estado: 'DISPONIBLE' },
-    { placa: 'DDD004', marca: 'International', modelo: 'WorkStar 2024', capacidad: 16.0, estado: 'DISPONIBLE' },
-    { placa: 'EEE005', marca: 'Foton', modelo: 'FRR 2023', capacidad: 7.2, estado: 'DISPONIBLE' }
+    { placa: 'RHA401', marca: 'Kenworth', modelo: 'T800 2018', capacidad: 35.0, estado: 'DISPONIBLE' },
+    { placa: 'CHU030', marca: 'Chevrolet', modelo: 'FVR 2021', capacidad: 11.5, estado: 'DISPONIBLE' },
+    { placa: 'SZX985', marca: 'International', modelo: 'WorkStar 2019', capacidad: 17.0, estado: 'DISPONIBLE' },
+    { placa: 'TRL089', marca: 'Hino', modelo: 'Dutro 300 2022', capacidad: 5.5, estado: 'DISPONIBLE' },
+    { placa: 'WOP741', marca: 'Foton', modelo: 'Aumark S 2023', capacidad: 7.0, estado: 'DISPONIBLE' }
   ];
 
+  const vehicleMap = {};
   const vehicles = [];
-  for (const vehicleVal of vehiclesData) {
-    const v = await prisma.vehicle.create({ data: vehicleVal });
+  for (const item of vehiclesData) {
+    const v = await prisma.vehicle.create({
+      data: {
+        placa: item.placa,
+        marca: item.marca,
+        modelo: item.modelo,
+        capacidad: item.capacidad,
+        estado: item.estado,
+        activo: true
+      }
+    });
+    vehicleMap[item.placa] = v.id;
     vehicles.push(v);
   }
-  console.log(`✅ 5 Vehículos registrados.`);
+  console.log(`✅ ${vehiclesData.length} Vehículos registrados.`);
 
-  // 5. Generar 50 Viajes Coherentes Financieramente
-  console.log('📊 Generando 50 viajes simulados para auditoría...');
-  
-  const origins = ["Extractora Gloria", "Palmas del Cesar", "Indupalma", "Extractora La Provincia", "Hacienda El Oasis"];
-  const destinations = ["Extractora Novapalma", "Terminal Barrancabermeja", "Puerto Giraldo", "Hacienda El Centro", "Planta Oleoflores"];
-  const companies = ["EXTRACTORA GLORIA S.A.S.", "PALMAS DEL CESAR S.A.", "NOVAPALMA S.A.S.", "INDUPALMA S.A.", "OLEOFLORES S.A.S."];
-  const products = ["FRUTO", "COMPOST"];
+  // 5. Cargar Viajes Reales desde el archivo JSON de extracción de Excel
+  console.log('📂 Leyendo viajes extraídos del Excel...');
+  const rawTrips = fs.readFileSync(path.join(__dirname, 'excel_trips.json'), 'utf8');
+  const excelTrips = JSON.parse(rawTrips);
 
-  let currentTicket = 14500;
+  const usedTickets = new Set();
+  let realCount = 0;
 
-  const createMockTrip = async (minDaysAgo, maxDaysAgo) => {
-    const driver = drivers[Math.floor(Math.random() * drivers.length)];
-    const vehicle = vehicles[Math.floor(Math.random() * vehicles.length)];
-    
-    const product = products[Math.floor(Math.random() * products.length)];
-    const origin = origins[Math.floor(Math.random() * origins.length)];
-    const destination = destinations[Math.floor(Math.random() * destinations.length)];
-    const company = companies[Math.floor(Math.random() * companies.length)];
-    
-    // Tonelaje adaptado a la capacidad del vehículo
-    const maxCapacity = parseFloat(vehicle.capacidad.toString());
-    const minTons = Math.max(2.0, maxCapacity - 2.0);
-    const tonelaje = Number((Math.random() * (maxCapacity - minTons) + minTons).toFixed(3));
-    
-    // Costo flete por tonelada (entre 35,000 y 65,000 COP)
-    const costPerTon = Math.floor(Math.random() * 30000) + 35000;
-    const valorPago = Math.round((tonelaje * costPerTon) / 1000) * 1000; // Redondeado a miles
-    
-    // Porcentaje conductor (entre 8.00% y 15.00%, redondeado a 2 decimales)
-    const porcentajeConductor = Number((Math.random() * 7 + 8).toFixed(2));
-    const valorConductor = Math.round(valorPago * (porcentajeConductor / 100));
-    
-    // ACPM
-    const consumoAcpm = Number((Math.random() * 15 + 10).toFixed(1));
-    const valorAcpm = Math.round((consumoAcpm * 9800) / 1000) * 1000; // Aprox $9,800 COP por galón
-    
-    // Ferry
-    const usoFerry = Math.random() < 0.3; // 30% probabilidad
-    const valorFerry = usoFerry ? (Math.round((Math.random() * 70000 + 180000) / 1000) * 1000) : 0;
-    
-    // Fecha distribuida en el rango de días especificado
-    const daysAgo = Math.floor(Math.random() * (maxDaysAgo - minDaysAgo + 1)) + minDaysAgo;
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-    
+  for (const trip of excelTrips) {
+    const driverId = driverMap[trip.conductor];
+    const vehicleId = vehicleMap[trip.placa];
+
+    if (!driverId || !vehicleId) {
+      console.warn(`⚠️ Omitiendo viaje ticket ${trip.ticket} por conductor/vehículo no mapeado.`);
+      continue;
+    }
+
+    // Calcular consumo de ACPM (a razón de $9,800 COP por galón si se ingresó valor monetario)
+    const valorAcpm = Number(trip.valorAcpm);
+    const consumoAcpm = valorAcpm > 0 ? Number((valorAcpm / 9800).toFixed(2)) : 0.0;
+
     await prisma.trip.create({
       data: {
-        ticket: currentTicket++,
+        ticket: trip.ticket,
+        fecha: new Date(trip.fecha),
+        origen: trip.origen,
+        destino: trip.destino,
+        empresa: trip.empresa,
+        producto: trip.producto,
+        tonelaje: trip.kilogramos / 1000.0,
+        valorPago: trip.valorFlete,
+        porcentajeConductor: 1.00, // En el excel, el pago al conductor es del 1% del flete
+        valorConductor: trip.valorConductor,
+        consumoAcpm,
+        usoAcpm: valorAcpm > 0,
+        usoFerry: trip.valorFerry > 0,
+        valorAcpm,
+        valorFerry: trip.valorFerry,
+        driverId,
+        vehicleId,
+        registradoPorId: operator.id
+      }
+    });
+    usedTickets.add(trip.ticket);
+    realCount++;
+  }
+  console.log(`✅ ${realCount} Viajes reales de Abril 2026 sembrados exitosamente.`);
+
+  // 6. Generar 200 viajes simulados realistas para Mayo y Junio 2026
+  console.log('🔮 Generando 200 viajes simulados realistas...');
+  
+  // Patrones realistas de viajes del Excel
+  const compostPattern = {
+    producto: 'COMPOST',
+    origen: 'EXTRACTORA-GLORIA',
+    destino: 'HACIENDA -GLORIA',
+    empresa: 'EXTRACTORA - GLORIA',
+    costoPorTon: 12000,
+    minKg: 10000,
+    maxKg: 25000,
+    hasAcpm: true,
+    hasFerry: false
+  };
+
+  const fruitPattern1 = {
+    producto: 'FRUTO',
+    origen: 'PUERTO RICO',
+    destino: 'EXTRACTORA-GLORIA',
+    empresa: 'PUERTO RICO',
+    costoPorTon: 32000,
+    minKg: 15000,
+    maxKg: 20000,
+    hasAcpm: false,
+    hasFerry: true
+  };
+
+  const fruitPattern2 = {
+    producto: 'FRUTO',
+    origen: 'LOMA',
+    destino: 'LOMA',
+    empresa: 'DAABON',
+    costoPorTon: 50000,
+    minKg: 15000,
+    maxKg: 20000,
+    hasAcpm: false,
+    hasFerry: true
+  };
+
+  const patterns = [compostPattern, fruitPattern1, fruitPattern2];
+  let generatedCount = 0;
+  let ticketSeed = 250000;
+
+  // Rango de fechas: de hace 40 días a hace 1 día (Mayo y Junio 2026)
+  const generateSimulatedTrip = async (daysAgo) => {
+    // Buscar un ticket único
+    while (usedTickets.has(ticketSeed)) {
+      ticketSeed++;
+    }
+    const ticket = ticketSeed++;
+    usedTickets.add(ticket);
+
+    // Selección aleatoria del conductor y del vehículo
+    const driver = drivers[Math.floor(Math.random() * drivers.length)];
+    const vehicle = vehicles[Math.floor(Math.random() * vehicles.length)];
+
+    // Selección aleatoria del patrón de flete
+    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+
+    // Generar tonelaje de acuerdo al patrón y al límite de capacidad del vehículo
+    const maxCapacity = parseFloat(vehicle.capacidad.toString()) * 1000.0; // en kg
+    const minKg = Math.min(pattern.minKg, maxCapacity - 2000);
+    const maxKg = Math.min(pattern.maxKg, maxCapacity);
+    const kilogramos = Math.round(Math.random() * (maxKg - minKg) + minKg);
+    const tonelaje = kilogramos / 1000.0;
+
+    // Calcular valores financieros según los patrones del Excel
+    const valorPago = Math.round(tonelaje * pattern.costoPorTon);
+    const valorConductor = Math.round(valorPago * 0.01); // 1%
+
+    // ACPM
+    let valorAcpm = 0;
+    let consumoAcpm = 0;
+    if (pattern.hasAcpm) {
+      consumoAcpm = Number((Math.random() * 15 + 20).toFixed(2)); // de 20 a 35 galones
+      valorAcpm = Math.round(consumoAcpm * 9800);
+    }
+
+    // Ferry
+    let valorFerry = 0;
+    if (pattern.hasFerry) {
+      valorFerry = Math.random() < 0.5 ? 110000 : 220000;
+    }
+
+    // Fecha
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+
+    await prisma.trip.create({
+      data: {
+        ticket,
         fecha: date,
-        origen: origin,
-        destino: destination,
-        empresa: company,
-        producto: product,
+        origen: pattern.origen,
+        destino: pattern.destino,
+        empresa: pattern.empresa,
+        producto: pattern.producto,
         tonelaje,
         valorPago,
-        consumoAcpm,
-        usoFerry,
-        porcentajeConductor,
+        porcentajeConductor: 1.00,
         valorConductor,
+        consumoAcpm,
+        usoAcpm: valorAcpm > 0,
+        usoFerry: valorFerry > 0,
         valorAcpm,
         valorFerry,
         driverId: driver.id,
         vehicleId: vehicle.id,
-        registradoPorId: operator.id
+        registradoPorId: operator2.id
       }
     });
+
+    generatedCount++;
   };
 
-  // Generar bloque 1: 50 viajes en el mes actual (últimos 30 días)
-  console.log('📅 Generando 50 viajes para el mes actual (últimos 30 días)...');
-  for (let i = 0; i < 50; i++) {
-    await createMockTrip(0, 29);
+  // Generar 100 viajes para Mayo (días 11 a 40 de antigüedad)
+  console.log('📅 Generando 100 viajes realistas para Mayo 2026...');
+  for (let i = 0; i < 100; i++) {
+    const daysAgo = Math.floor(Math.random() * 30) + 11;
+    await generateSimulatedTrip(daysAgo);
   }
 
-  // Generar bloque 2: 20 viajes para el mes anterior (días 30 a 59)
-  console.log('📅 Generando 20 viajes para el mes anterior (días 30 a 59)...');
-  for (let i = 0; i < 20; i++) {
-    await createMockTrip(30, 59);
+  // Generar 100 viajes para Junio (días 1 a 10 de antigüedad)
+  console.log('📅 Generando 100 viajes realistas para Junio 2026...');
+  for (let i = 0; i < 100; i++) {
+    const daysAgo = Math.floor(Math.random() * 10) + 1;
+    await generateSimulatedTrip(daysAgo);
   }
 
-  // Generar bloque 3: 15 viajes para el mes ante-anterior (días 60 a 89)
-  console.log('📅 Generando 15 viajes para hace dos meses (días 60 a 89)...');
-  for (let i = 0; i < 15; i++) {
-    await createMockTrip(60, 89);
-  }
-
-  console.log('✅ Base de datos saneada y 85 viajes históricos coherentes registrados exitosamente.');
+  console.log(`✅ ${generatedCount} Viajes simulados creados exitosamente.`);
+  console.log(`🎉 Poblamiento completado. Base de datos 100% limpia y saneada.`);
 }
 
 main()
@@ -180,4 +317,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    pool.end();
   });
