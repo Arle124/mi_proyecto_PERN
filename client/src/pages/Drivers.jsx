@@ -217,16 +217,18 @@ const Drivers = () => {
           <p className="text-muted small">Gestión de personal operativo y contacto</p>
         </div>
         <div className="d-flex gap-3 align-items-center">
-          <div className="form-check form-switch m-0 d-flex align-items-center gap-2">
-            <input 
-              type="checkbox" 
-              className="form-check-input cursor-pointer" 
-              id="showInactiveSwitch" 
-              checked={showInactive} 
-              onChange={(e) => setShowInactive(e.target.checked)} 
-            />
-            <label className="form-check-label small fw-bold text-secondary cursor-pointer" htmlFor="showInactiveSwitch">Mostrar Inactivos</label>
-          </div>
+          {isAdmin() && (
+            <div className="form-check form-switch m-0 d-flex align-items-center gap-2">
+              <input 
+                type="checkbox" 
+                className="form-check-input cursor-pointer" 
+                id="showInactiveSwitch" 
+                checked={showInactive} 
+                onChange={(e) => setShowInactive(e.target.checked)} 
+              />
+              <label className="form-check-label small fw-bold text-secondary cursor-pointer" htmlFor="showInactiveSwitch">Mostrar Inactivos</label>
+            </div>
+          )}
           <button 
             className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
             onClick={handleOpenCreateModal}
