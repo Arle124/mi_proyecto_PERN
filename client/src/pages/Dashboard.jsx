@@ -310,7 +310,6 @@ const Dashboard = () => {
       </svg>
     );
   };
-
   // Renderizador de gráfico de dona (Donut) en SVG
   const renderDonutChart = (data, totalValueLabel) => {
     const size = 180;
@@ -332,7 +331,8 @@ const Dashboard = () => {
             {data.map((item, index) => {
               if (item.percentage === 0) return null;
               const strokeLength = (item.percentage / 100) * circumference;
-              const strokeOffset = circumference - (accumulatedPercentage / 100) * circumference;
+              // El offset acumulado debe ser negativo para desplazar el inicio en sentido horario
+              const strokeOffset = - (accumulatedPercentage / 100) * circumference;
               accumulatedPercentage += item.percentage;
 
               return (
