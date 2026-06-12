@@ -49,7 +49,7 @@ Al registrar o editar un conductor, el sistema activa un **firewall dinámico en
 #### 3.2. Gestión de Vehículos
 - **Placa:** Debe ingresarse obligatoriamente bajo el formato estándar colombiano de tránsito (`AAA123` - 3 letras mayúsculas seguidas de 3 dígitos). Si se ingresa una estructura errónea, el formulario de Zod la intercepta y bloquea el envío.
 - **Capacidad:** Debe registrarse en toneladas decimales (ej: `32.50` para tractomulas de tres ejes).
-- **Estado Operativo:** Permite catalogar el vehículo en tiempo real en los estados `DISPONIBLE`, `EN_VIAJE` o `MANTENIMIENTO`.
+- **Estado:** El vehículo se clasifica en dos estados operativos posibles: **DISPONIBLE** (activo en la flota y listo para ser asignado a nuevos viajes) o **INACTIVO** (desactivado de la flota activa mediante la baja lógica).
 
 ---
 
