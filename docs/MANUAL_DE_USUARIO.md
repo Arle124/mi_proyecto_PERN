@@ -18,7 +18,7 @@ El ingreso a la plataforma está protegido mediante autenticación con cifrado b
 
 > [!IMPORTANT]
 > **Seguridad Antivandalismo (Rate Limiting):** 
-> Si realiza más de 100 intentos fallidos en menos de 15 minutos desde la misma dirección IP, el cortafuegos perimetral del backend bloqueará temporalmente su acceso mostrando el error `429 Too Many Requests`.
+> Si realiza más de 15 intentos de inicio de sesión fallidos en menos de 15 minutos desde la misma dirección IP, el backend bloqueará temporalmente su acceso mostrando el error `429 Too Many Requests`. Adicionalmente, el sistema limita las peticiones generales a la API para evitar abusos o ataques de denegación de servicio.
 
 ---
 
@@ -99,15 +99,18 @@ El sistema cuenta con un botón **Exportar a Excel** que genera instantáneament
 
 ### 6. SEGURIDAD Y PRIVILEGIOS DE ROLES (RBAC)
 
-El acceso a las funciones está condicionado por el rol del usuario asignado en base de datos:
+El acceso a las funciones está condicionado por el rol del usuario asignado en la base de datos:
 
 | Característica / Módulo | Rol: ADMINISTRADOR | Rol: OPERADOR (Despachador) |
 | :--- | :---: | :---: |
 | Registrar Viajes | Sí | Sí |
 | Modificar Viajes | Sí | Sí |
 | Eliminar Viajes (Soft Delete) | **Sí** | No (Restringido) |
+| Registrar Conductores / Vehículos | Sí | Sí |
+| Modificar / Eliminar Conductores | **Sí** | No (Restringido) |
+| Modificar / Eliminar Vehículos | **Sí** | No (Restringido) |
 | Configuración de Tarifas | **Sí** | No (Visualización de lectura) |
 | CRUD de Usuarios y Cuentas | **Sí** | No (Oculto de barra de navegación) |
 | Generación de Reportes Financieros | **Sí** | No (Oculto de barra de navegación) |
 | Bitácora de Auditoría Forense | **Sí** | No (Oculto de barra de navegación) |
-| Columnas de "Acciones" en Tablas | Completas | Ocultas (Visualización limpia) |
+| Columnas de "Acciones" en Tablas (Vehículos/Conductores) | Completas (Editar/Eliminar) | Ocultas (Visualización limpia) |
