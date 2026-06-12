@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { DollarSign, Filter, Download, Table, Calendar, AlertCircle, Search } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 
 const Finance = () => {
   const { isAdmin } = useAuth();
@@ -106,16 +106,115 @@ const Finance = () => {
 
     // Conversión de JSON estructurado a hoja física de XLSX
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+    // Definición de estilos premium
+    const headerStyle = {
+      font: { name: 'Segoe UI', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { patternType: 'solid', fgColor: { rgb: '0F172A' } }, // Slate 900
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: {
+        top: { style: 'thin', color: { rgb: '475569' } },
+        bottom: { style: 'medium', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '475569' } },
+        right: { style: 'thin', color: { rgb: '475569' } }
+      }
+    };
+
+    const borderStyle = {
+      top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+      bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+      left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+      right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+    };
+
+    const textStyleLeft = {
+      font: { name: 'Segoe UI', sz: 10 },
+      alignment: { horizontal: 'left', vertical: 'center' },
+      border: borderStyle
+    };
+
+    const textStyleCenter = {
+      font: { name: 'Segoe UI', sz: 10 },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: borderStyle
+    };
+
+    const numStyleRight = {
+      font: { name: 'Segoe UI', sz: 10 },
+      alignment: { horizontal: 'right', vertical: 'center' },
+      border: borderStyle
+    };
+
+    // Aplicar estilos a cada celda de forma dinámica
+    for (const key in worksheet) {
+      if (key.startsWith('!')) continue;
+      
+      const cell = worksheet[key];
+      const colLetter = key.replace(/[0-9]/g, '');
+      const rowNum = parseInt(key.replace(/[^0-9]/g, ''), 10);
+
+      if (rowNum === 1) {
+        cell.s = headerStyle;
+        continue;
+      }
+
+      // Base Style por alineación y tipo de columna
+      let baseStyle = textStyleCenter; // Por defecto centrado (Fecha, Placa, Producto, Tiquete)
+      
+      if (['C', 'D', 'E', 'F'].includes(colLetter)) {
+        // Conductor, Empresa, ORIGEN, DESTINO -> Izquierda
+        baseStyle = textStyleLeft;
+      } else if (['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'].includes(colLetter)) {
+        // Kilogramos y valores numéricos/monetarios -> Derecha
+        baseStyle = numStyleRight;
+      }
+
+      // Copia profunda del estilo base para no alterar celdas compartidas
+      const cellStyle = JSON.parse(JSON.stringify(baseStyle));
+
+      // Aplicar formato de número/moneda de Excel nativo
+      if (cell.t === 'n' || !isNaN(cell.v)) {
+        cell.t = 'n'; // Asegurar tipo número
+        if (colLetter === 'H') {
+          cell.z = '0'; // Tiquete sin decimales
+        } else if (colLetter === 'I') {
+          cell.z = '#,##0;[Red](#,##0);0'; // Kilogramos
+        } else if (colLetter === 'J') {
+          cell.z = '"$"#,##0.00;[Red]("$"#,##0.00);"$0.00"'; // Valor Tonelada con 2 decimales
+        } else {
+          cell.z = '"$"#,##0;[Red]("$"#,##0);"$0"'; // Financiero normal
+        }
+      }
+
+      // Aplicar Cebra (filas pares de Excel tienen fondo ligeramente grisáceo)
+      if (rowNum % 2 === 0) {
+        cellStyle.fill = { patternType: 'solid', fgColor: { rgb: 'F8FAFC' } }; // Slate 50
+      }
+
+      cell.s = cellStyle;
+    }
     
-    // Auto-fit dinámico de columnas según longitud máxima del contenido de la columna + 2 padding
+    // Auto-fit dinámico de columnas según longitud máxima del contenido de la columna + 3 padding
     const colWidths = Object.keys(formattedData[0] || {}).map(key => {
       const maxLength = Math.max(
         key.length,
         ...formattedData.map(row => String(row[key] || '').length)
       );
-      return { wch: maxLength + 2 };
+      return { wch: maxLength + 3 };
     });
     worksheet['!cols'] = colWidths;
+
+    // Altura de filas para mejorar la visualización y dar espacio ("respiración") al diseño
+    const rowsCount = formattedData.length + 1;
+    const rowHeights = [];
+    for (let r = 0; r < rowsCount; r++) {
+      if (r === 0) {
+        rowHeights.push({ hpt: 26 }); // Cabecera más alta
+      } else {
+        rowHeights.push({ hpt: 20 }); // Filas de datos cómodas
+      }
+    }
+    worksheet['!rows'] = rowHeights;
 
     // Crea el libro de trabajo (workbook) y añade la pestaña de reporte consolidado
     const workbook = XLSX.utils.book_new();
