@@ -10,16 +10,11 @@ Este documento realiza un mapeo y evaluación de cómo el sistema **Novapalma** 
 El proyecto Novapalma, desarrollado con el stack **PERN** (PostgreSQL, Express, React, Node.js), integra de manera nativa mecanismos avanzados de seguridad, validación en caliente, auditoría forense inmutable y arquitectura desacoplada. A continuación se detalla el nivel de cumplimiento para cada una de las 8 características principales:
 
 ```mermaid
-radar-chart
-    title Nivel de Cumplimiento ISO/IEC 25010 (Estimado)
-    "Adecuación Funcional": 95
-    "Eficiencia de Desempeño": 90
-    "Compatibilidad": 95
-    "Usabilidad": 92
-    "Fiabilidad": 90
-    "Seguridad": 98
-    "Mantenibilidad": 95
-    "Portabilidad": 95
+xychart-beta
+    title "Nivel de Cumplimiento ISO/IEC 25010 (Estimado)"
+    x-axis ["Adecuación", "Desempeño", "Compatibilidad", "Usabilidad", "Fiabilidad", "Seguridad", "Mantenibilidad", "Portabilidad"]
+    y-axis "Porcentaje (%)" 0 --> 100
+    bar [95, 90, 95, 92, 90, 98, 95, 95]
 ```
 
 ---
@@ -45,7 +40,7 @@ radar-chart
 *   **Utilización de Recursos:**
     *   **Implementación:** El pool de conexiones de base de datos se gestiona eficientemente con el cliente Prisma optimizado (`@prisma/adapter-pg`). El uso de contenedores livianos mediante **Docker Compose** limita y optimiza la asignación de memoria y CPU en el sistema host.
 *   **Capacidad:**
-    *   **Implementación:** El backend cuenta con un middleware de **Rate Limiting** (`express-rate-limit`) configurado para admitir hasta 100 peticiones por cada 15 minutos por IP, protegiendo la capacidad del servidor ante saturación o abusos intencionados. Los payloads JSON de entrada están limitados estrictamente a **10KB** para evitar el agotamiento de memoria RAM.
+    *   **Implementación:** El backend cuenta con un middleware de **Rate Limiting** (`express-rate-limit`) configurado para admitir hasta 250 peticiones por cada 1 minuto por IP en producción (1000 en desarrollo) a nivel de la API general, y un limitador exclusivo de 15 intentos por 15 minutos en el inicio de sesión, protegiendo la capacidad del servidor ante saturación o abusos intencionados. Los payloads JSON de entrada están limitados estrictamente a **10KB** para evitar el agotamiento de memoria RAM.
 
 ---
 

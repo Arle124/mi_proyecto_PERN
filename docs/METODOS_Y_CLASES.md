@@ -84,6 +84,10 @@ classDiagram
         +getTripById(id)
         +updateTrip(id, updateData, userId)
         +deleteTrip(id, userId)
+        -validateActiveVehicle(tx, vehicleId)
+        -validateActiveDriver(tx, driverId)
+        -calculateConductorPay(valorPago, porcentajeConductor)
+        -parseUpdateFields(dataToUpdate)
     }
 
     class UserService {

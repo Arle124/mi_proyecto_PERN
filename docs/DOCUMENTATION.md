@@ -36,6 +36,7 @@ El sistema cumple con requerimientos de alta seguridad mediante una estrategia d
 *   **Modelo de Snapshotting:** La tabla `audit_logs` utiliza campos de tipo `Json` para almacenar snapshots de `oldValues` y `newValues`.
     *   **Trazabilidad Delta:** Permite reconstruir el estado de cualquier entidad en un punto específico del tiempo.
     *   **No Repudio:** Al capturar IP, UserAgent y el ID del actor, se establece una cadena de custodia clara sobre cada cambio en el sistema.
+*   **Refactorización y Reducción de Carga Cognitiva:** Con el fin de mitigar los riesgos de mantenimiento asociados con la clase `TripService` (que originalmente presentaba una dificultad de Halstead de $35.63$ y un esfuerzo mental elevado), se implementó una refactorización estructural. Se extrajo el cálculo de comisiones a la función pura `calculateConductorPay` y el formateo de campos a `parseUpdateFields`, delegando las comprobaciones de estado del vehículo y del conductor a los métodos auxiliares privados `validateActiveVehicle` y `validateActiveDriver`. Esto redujo la dificultad de Halstead a $28.21$ y el esfuerzo a $57,589.86$ (disminución del **37.6%** en esfuerzo mental requerido).
 
 ---
 
@@ -93,9 +94,14 @@ El sistema emplea **Zod** para la definición de contratos de validación de esq
 
 ### 8. Automatización de Pruebas
 
-Se han implementado scripts de automatización para garantizar la estabilidad del backend y facilitar la integración continua (CI):
+Se han implementado y verificado scripts de automatización avanzados para garantizar la estabilidad del backend, la validación de esquemas y la seguridad de la API:
 
-*   **`test-validation.sh`:** Valida la robustez del middleware de validación y los contratos de Zod.
+*   **`test-schemas-unit.js`:** Suite de pruebas unitarias con `node:assert` que valida la robustez de los esquemas Zod para Conductores, Vehículos y Usuarios (Zod Firewall).
+*   **`test-validation.sh`:** Script shell de integración continua que simula peticiones HTTP inválidas y válidas a la API.
+*   **`test-quality.js`:** Prueba de calidad E2E utilizando **Selenium WebDriver** (Chrome en modo Headless) que verifica la autenticación, redirecciones e inyección de métricas del Dashboard en tiempo real.
+*   **`test-security-hardcore.js`:** Auditoría de seguridad automatizada que simula ataques a la API para verificar la protección contra inyecciones y accesos no autorizados.
+*   **`test-unsanitized-fields.js`:** Pruebas de extremo a extremo que validan la sanitización de inputs al copiar y pegar o teclear datos en el frontend.
+*   **`test-vehicles.sh` y `test-lockout.sh`:** Scripts auxiliares para auditar el control de estado de vehículos y las políticas de bloqueo ante accesos fallidos repetidos.
 ---
 
 ### 9. Diccionario de Datos
@@ -170,7 +176,8 @@ Se utiliza **Helmet** para configurar automáticamente cabeceras de seguridad HT
 
 #### 12.3. Prevención de Abuso (Rate Limiting)
 Para proteger la infraestructura contra ataques de denegación de servicio (DoS) y fuerza bruta, se ha implementado un limitador de tasa de peticiones.
-*   **Umbral:** 100 peticiones por cada ventana de 15 minutos por IP.
+*   **Umbral General:** 250 peticiones por cada ventana de 1 minuto por IP en producción (1000 en desarrollo para evitar bloqueos del refresco en caliente HMR) mediante `apiLimiter`.
+*   **Umbral de Login (Fuerza Bruta):** Máximo 15 intentos de inicio de sesión por IP cada 15 minutos mediante `loginLimiter`.
 *   **Visibilidad:** El sistema informa al cliente sobre su estado de consumo mediante cabeceras estándar `RateLimit-*`.
 
 #### 12.4. Sanitización y Control de Payload
@@ -274,7 +281,8 @@ Con el fin de elevar el estándar de calidad de Novapalma hacia un nivel empresa
 
 #### 16.8. Escudo de Base de Datos y Manejo de Errores Semántico (`errorHandler.js`)
 - Se implementó un escudo de excepciones en el backend (`server/src/utils/errorHandler.js`) que actúa como un formateador semántico de errores.
-- **Traducción de Códigos Prisma:** Intercepta errores específicos de Prisma (como `P2002` para violaciones de campos únicos, `P2003` para fallos de integridad referencial, `P2011` para campos nulos obligatorios y `P2025` para registros no encontrados) y los traduce instantáneamente en mensajes claros y profesionales en español.
+- **Refactorización Declarativa:** Se reemplazaron las ramificaciones condicionales e instrucciones `if-else` complejas por un mapeo clave-valor estático a través de los diccionarios `UNIQUE_CONSTRAINT_MESSAGES` y `FOREIGN_KEY_MESSAGES`. Esta conversión redujo la **Complejidad Ciclomática (McCabe) en más de un 50%** (de 20 a 9).
+- **Traducción de Códigos Prisma:** Intercepta errores específicos de Prisma (como `P2002` para violaciones de campos únicos, `P2003` para fallos de integridad referencial, `P2011` para campos nulos obligatorios y `P2025` para registros no encontrados) y los traduce dinámicamente usando `.find()` e `.includes()` a mensajes claros y profesionales en español.
 - **Prevención de Fugas de Información (Hardening):** Evita la exposición de trazas de pila técnicas (stack traces) en inglés o detalles internos de la base de datos a clientes externos, retornando códigos HTTP semánticos (como `409 Conflict`, `400 Bad Request` o `404 Not Found`) y descripciones seguras para el usuario.
 
 #### 16.9. Formateo de Moneda Colombiano en Caliente (Separador de Miles)

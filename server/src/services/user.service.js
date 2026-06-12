@@ -2,9 +2,28 @@ import { prisma } from '../config/db.js';
 import bcrypt from 'bcryptjs';
 import * as auditService from './audit.service.js';
 
+/**
+ * ============================================================================
+ * SERVICIO DE USUARIOS Y CONTROL DE ACCESO (USER SERVICE)
+ * ============================================================================
+ * Proporciona el control CRUD y el aprovisionamiento seguro de cuentas.
+ * Implementa blindaje de seguridad crítica en operaciones de administración
+ * y persistencia transaccional ACID de auditoría forense.
+ */
+
+/**
+ * Obtiene el listado de todos los usuarios registrados que no han sido
+ * eliminados lógicamente (deletedAt = null).
+ * Excluye los hashes de contraseña de los registros retornados para evitar
+ * fugas accidentales de información.
+ * 
+ * @returns {Promise<Array>} Listado de usuarios con datos de perfil seleccionados.
+ */
 export const getAllUsers = async () => {
   return await prisma.user.findMany({
+    // Filtrar para excluir usuarios con eliminación lógica
     where: { deletedAt: null },
+    // Carga de campos segura: No se incluye el password hash en la selección
     select: {
       id: true,
       primerNombre: true,
@@ -20,12 +39,23 @@ export const getAllUsers = async () => {
   });
 };
 
+/**
+ * Crea un nuevo usuario en la base de datos de forma transaccional.
+ * Requiere que el creador de la cuenta sea un administrador activo del sistema.
+ * Cifra la contraseña provista usando hashing bcrypt con 10 salt rounds.
+ * 
+ * @param {Object} userData - Datos de registro (nombre, correo, password, rol).
+ * @param {string} creatorId - UUID del usuario que ejecuta la acción.
+ * @returns {Promise<Object>} El usuario creado (sin el hash de contraseña).
+ * @throws {Error} Si no se provee creatorId, si el creador no existe, si no es administrador o si falla el registro.
+ */
 export const createUser = async (userData, creatorId = null) => {
+  // Regla de Trazabilidad: Se requiere identificar al actor creador obligatoriamente
   if (!creatorId) {
     throw new Error('Operación denegada: Se requiere la identificación del creador.');
   }
 
-  // Verificar que el creador sea un administrador activo en la base de datos
+  // Regla de Autorización: Verificar que el creador sea un administrador activo en la base de datos
   const actor = await prisma.user.findFirst({
     where: { id: creatorId, activo: true, deletedAt: null }
   });
@@ -33,11 +63,13 @@ export const createUser = async (userData, creatorId = null) => {
     throw new Error('Operación denegada: Se requieren privilegios de administrador activos para registrar nuevos usuarios.');
   }
 
+  // Cifrado de contraseña asíncrono para asegurar las credenciales en reposo
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
 
+  // Ejecución atómica ACID de la creación de usuario y registro de su auditoría correspondiente
   return await prisma.$transaction(async (tx) => {
-    // 1. Crear el usuario
+    // 1. Insertar el registro de usuario en base de datos
     const newUser = await tx.user.create({
       data: {
         primerNombre: userData.primerNombre,
@@ -50,7 +82,7 @@ export const createUser = async (userData, creatorId = null) => {
       }
     });
 
-    // 2. Registrar en Auditoría
+    // 2. Registrar el rastro forense inmutable de la creación de la cuenta
     await auditService.logAudit({
       userId: creatorId,
       action: 'CREATE',
@@ -65,18 +97,30 @@ export const createUser = async (userData, creatorId = null) => {
 
     console.log(`🛡️ Auditoría confirmada para el usuario: ${newUser.correo}`);
 
-    // Retornar usuario sin password
+    // Limpieza de datos sensibles del objeto a retornar al llamador
     const { password, ...userWithoutPassword } = newUser;
     return userWithoutPassword;
   });
 };
 
+/**
+ * Actualiza los datos de un usuario existente, incluyendo auditoría del cambio.
+ * Aplica reglas estrictas de blindaje para impedir auto-bloqueos o degradación de roles.
+ * 
+ * @param {string} id - UUID del usuario a modificar.
+ * @param {Object} updateData - Nuevos datos del usuario a aplicar.
+ * @param {string} adminId - UUID del administrador que realiza la actualización.
+ * @returns {Promise<Object>} Datos del usuario actualizado (sin password hash).
+ * @throws {Error} Si el actor no es ADMIN, si se intenta el auto-bloqueo del administrador activo,
+ *                 o si se intenta desactivar al único administrador activo disponible.
+ */
 export const updateUser = async (id, updateData, adminId) => {
+  // Regla de Trazabilidad: Identificación del autor es mandatoria
   if (!adminId) {
     throw new Error('Operación denegada: Se requiere la identificación del administrador.');
   }
 
-  // Verificar que el actor sea un administrador activo en la base de datos
+  // Regla de Autorización: Verificar que el actor ejecutor tenga privilegios de administrador
   const actor = await prisma.user.findFirst({
     where: { id: adminId, activo: true, deletedAt: null }
   });
@@ -84,7 +128,7 @@ export const updateUser = async (id, updateData, adminId) => {
     throw new Error('Operación denegada: Se requieren privilegios de administrador activos para modificar usuarios.');
   }
 
-  // Blindaje de Seguridad: Previene el auto-bloqueo del administrador activo
+  // Blindaje de Seguridad Crítico: Prevenir que el administrador se auto-bloquee o se degrade a sí mismo
   if (id === adminId) {
     if (updateData.activo === false) {
       throw new Error('Operación denegada: No puedes desactivar o suspender tu propia cuenta de administrador.');
@@ -96,20 +140,23 @@ export const updateUser = async (id, updateData, adminId) => {
 
   const dataToUpdate = { ...updateData };
 
+  // Cifrar de forma asíncrona la contraseña si se está enviando una actualización de contraseña
   if (updateData.password) {
     const saltRounds = 10;
     dataToUpdate.password = await bcrypt.hash(updateData.password, saltRounds);
   }
 
+  // Transacción ACID para asegurar consistencia del estado del sistema
   return await prisma.$transaction(async (tx) => {
-    // 1. Obtener usuario actual
+    // 1. Obtener datos previos del usuario a modificar
     const oldUser = await tx.user.findUnique({
       where: { id }
     });
     if (!oldUser) throw new Error('Usuario no encontrado');
 
-    // Blindaje de seguridad adicional: Si el usuario a modificar es ADMIN,
-    // y se le intenta desactivar o degradar, verificar cuántos administradores activos quedan.
+    // Blindaje de resiliencia: Si el usuario objetivo es ADMIN y se le intenta desactivar
+    // o degradar de rol, validar que exista al menos otro administrador activo para evitar
+    // dejar al sistema sin accesos administrativos.
     if (oldUser.rol === 'ADMIN' && (updateData.activo === false || updateData.rol === 'OPERADOR')) {
       const activeAdminsCount = await tx.user.count({
         where: {
@@ -124,13 +171,13 @@ export const updateUser = async (id, updateData, adminId) => {
       }
     }
 
-    // 2. Ejecutar la actualización
+    // 2. Ejecutar la actualización en base de datos
     const updatedUser = await tx.user.update({
       where: { id },
       data: dataToUpdate
     });
 
-    // 3. Registrar auditoría forense
+    // 3. Registrar auditoría forense capturando el delta de los cambios
     await auditService.logAudit({
       userId: adminId,
       action: 'UPDATE',
@@ -152,7 +199,7 @@ export const updateUser = async (id, updateData, adminId) => {
 
     console.log(`🛡️ Auditoría de actualización confirmada para el usuario: ${updatedUser.correo}`);
 
-    // Retornar usuario sin password
+    // Remover hash sensible antes de retornar los datos
     const { password, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   });
