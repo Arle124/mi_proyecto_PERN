@@ -227,14 +227,12 @@ const Drivers = () => {
             />
             <label className="form-check-label small fw-bold text-secondary cursor-pointer" htmlFor="showInactiveSwitch">Mostrar Inactivos</label>
           </div>
-          {isAdmin() && (
-            <button 
-              className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
-              onClick={handleOpenCreateModal}
-            >
-              <Plus size={20} /> Nuevo Conductor
-            </button>
-          )}
+          <button 
+            className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+            onClick={handleOpenCreateModal}
+          >
+            <Plus size={20} /> Nuevo Conductor
+          </button>
         </div>
       </div>
 
