@@ -97,4 +97,11 @@ cd client
 npm run dev
 ```
 
+---
 
+## Colaboradores 👥
+
+- **Yesid Fernando Gelvez Rincón**
+- **Javier Antonio Beleño Rico**
+- **José Jorge Silva Niebles**
+- **Hecmaibel Chiquinquirá Quero Lenz**
