@@ -136,3 +136,5 @@ Proyecto: Sistema de Gestión Logística y Financiera Novapalma (PERN Stack)
    - Migrar a estrategia Access Token (stateless) + Refresh Token rotativo.
    - Configurar pipeline automatizado de CI/CD en GitHub Actions.
 ================================================================================
+
+Yeah
