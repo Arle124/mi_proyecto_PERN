@@ -4,6 +4,7 @@ dist/
 .DS_Store
 .aider*
 implementacion_online.md
+graphify-out
 
 # Document extraction assets
 extracted_text.txt

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novapalma - Análisis de Arquitectura & Grafo Graphify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-card: #1f2937;
+      --bg-card-hover: #263346;
+      --border-color: #374151;
+      --border-focus: #3b82f6;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-rose: #f43f5e;
+      --code-bg: #0d1321;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.95));
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 850px;
+    }
+
+    /* Grid de Métricas */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-blue);
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.4rem;
+      background: linear-gradient(90deg, #60a5fa, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Secciones */
+    .section {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    /* Diagrama Mermaid */
+    .diagram-wrapper {
+      background-color: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    /* Cards de Nodos Dios */
+    .god-nodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .god-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .god-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .god-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+    }
+
+    .god-badge {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .god-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 0.5rem;
+    }
+
+    .god-desc {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Capas de Arquitectura */
+    .layers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .layer-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border-top: 4px solid var(--accent-blue);
+    }
+
+    .layer-card.db { border-top-color: var(--accent-emerald); }
+    .layer-card.sec { border-top-color: var(--accent-rose); }
+    .layer-card.front { border-top-color: var(--accent-purple); }
+    .layer-card.qa { border-top-color: var(--accent-amber); }
+
+    .layer-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #ffffff;
+    }
+
+    .layer-list {
+      list-style: none;
+    }
+
+    .layer-list li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .layer-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--accent-blue);
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+
+    .layer-card.db .layer-list li::before { color: var(--accent-emerald); }
+    .layer-card.sec .layer-list li::before { color: var(--accent-rose); }
+    .layer-card.front .layer-list li::before { color: var(--accent-purple); }
+    .layer-card.qa .layer-list li::before { color: var(--accent-amber); }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background-color: var(--code-bg);
+      color: #38bdf8;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    /* Tabla de Comunidades */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th {
+      background-color: var(--bg-card);
+      color: var(--text-primary);
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+      color: var(--text-secondary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border-color);
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      header { padding: 1.5rem; }
+      h1 { font-size: 1.8rem; }
+      .section { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="badge-pill">
+        Auditoría de Arquitectura de Software
+      </div>
+      <h1>Novapalma - Sistema de Gestión Logística</h1>
+      <p class="subtitle">
+        Análisis topológico y arquitectónico del proyecto basado en el grafo de conocimiento generado por Graphify. Evaluación del Stack PERN, patrones de diseño MVC Potenciado, auditoría forense ACID y separación de responsabilidades.
+      </p>
+    </header>
+
+    <!-- Métricas del Grafo -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-value">364</div>
+        <div class="metric-label">Nodos Totales</div>
+        <div class="metric-sub">Entidades, clases, funciones y archivos</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">557</div>
+        <div class="metric-label">Aristas de Conexión</div>
+        <div class="metric-sub">Llamadas, importaciones y referencias</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">29</div>
+        <div class="metric-label">Comunidades</div>
+        <div class="metric-sub">23 funcionales principales + 6 auxiliares</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">97%</div>
+        <div class="metric-label">Extracción AST</div>
+        <div class="metric-sub">Determinista + 3% inferida semánticamente</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">0</div>
+        <div class="metric-label">Ciclos de Importación</div>
+        <div class="metric-sub">Flujo unidireccional y desacoplado</div>
+      </div>
+    </div>
+
+    <!-- Diagrama Arquitectónico -->
+    <section class="section">
+      <h2 class="section-title">
+        Topología Arquitectónica del Sistema
+      </h2>
+      <div class="diagram-wrapper">
+        <pre class="mermaid">
+graph TD
+    subgraph Frontend ["CLIENTE SPA (React 18 + Vite)"]
+        UI["App.jsx & Vistas"]
+        AuthCtx["AuthContext.jsx (useAuth)"]
+        Axios["Cliente Axios (withCredentials)"]
+        UI --> AuthCtx --> Axios
+    end
+
+    subgraph Gateway ["EXPRESS API GATEWAY"]
+        App["app.js (Helmet, RateLimiters)"]
+        Router["index.routes.js"]
+        App --> Router
+    end
+
+    subgraph Middlewares ["FILTROS Y SEGURIDAD"]
+        AuthM["auth.middleware.js (JWT HttpOnly)"]
+        RoleM["role.middleware.js (RBAC Admin)"]
+        ZodM["validate.middleware.js (Contratos Zod)"]
+    end
+
+    subgraph Controllers ["CONTROLADORES HTTP"]
+        C_Auth["auth.controller.js"]
+        C_Trip["trip.controller.js"]
+        C_User["user.controller.js"]
+        C_Veh["vehicle.controller.js"]
+    end
+
+    subgraph CoreServices ["SERVICIOS CORE (Lógica de Negocio)"]
+        S_Trip["trip.service.js (Cálculos de Fletes)"]
+        S_Audit["audit.service.js (logAudit)"]
+        S_Auth["auth.service.js"]
+    end
+
+    subgraph DataPersistence ["PERSISTENCIA (PostgreSQL 15)"]
+        ErrH["errorHandler.js (formatError)"]
+        Prisma["Prisma 7 Client (@prisma/adapter-pg)"]
+        DB[("Base de Datos 3NF: Users, Trips, Audit, Vehicles")]
+    end
+
+    Axios -->|"HTTPS + HttpOnly Cookie"| App
+    Router --> Middlewares
+    Middlewares --> Controllers
+    Controllers --> CoreServices
+    CoreServices -->|"Transacciones ACID ()"| Prisma
+    CoreServices --> S_Audit
+    S_Audit -->|"Registro Forense Inmutable"| Prisma
+    Prisma --> DB
+    Controllers -.->|"Manejo de Excepciones"| ErrH
+    CoreServices -.->|"Captura de Errores ORM"| ErrH
+
+    classDef client fill:#1e1b4b,stroke:#6366f1,stroke-width:1px;
+    classDef server fill:#1e293b,stroke:#3b82f6,stroke-width:1px;
+    classDef db fill:#064e3b,stroke:#10b981,stroke-width:1px;
+    classDef err fill:#4c0519,stroke:#f43f5e,stroke-width:1px;
+
+    class UI,AuthCtx,Axios client;
+    class App,Router,AuthM,RoleM,ZodM,C_Auth,C_Trip,C_User,C_Veh,S_Trip,S_Audit,S_Auth server;
+    class Prisma,DB db;
+    class ErrH err;
+        </pre>
+      </div>
+    </section>
+
+    <!-- Nodos Dios (God Nodes) -->
+    <section class="section">
+      <h2 class="section-title">
+        God Nodes - Abstracciones Centrales del Grafo
+      </h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+        Los nodos con mayor grado de centralidad (degree) representan los componentes vertebrales sobre los cuales descansan la seguridad, el flujo de datos y la resiliencia del sistema.
+      </p>
+      
+      <div class="god-nodes-grid">
+        <div class="god-card">
+          <div>
+            <div class="god-header">
+              <span class="god-name">formatError()</span>
+              <span class="god-badge">26 Aristas</span>
+            </div>
+            <div class="god-meta">server/src/utils/errorHandler.js:40</div>
+            <p class="god-desc">
+              Escudo semántico global. Estandariza respuestas HTTP de error, intercepta y traduce excepciones de violación de unicidad y llaves foráneas de Prisma (P2002, P2003) sin filtrar información sensible del motor de base de datos.
+            </p>
+          </div>
+        </div>
+
+        <div class="god-card">
+          <div>
+            <div class="god-header">
+              <span class="god-name">App.jsx</span>
+              <span class="god-badge">25 Aristas</span>
+            </div>
+            <div class="god-meta">client/src/App.jsx:15</div>
+            <p class="god-desc">
+              Orquestador principal de la interfaz React. Centraliza el enrutamiento declarativo con React Router, vinculando componentes de navegación con validadores de sesión (ProtectedRoute y AdminRoute).
+            </p>
+          </div>
+        </div>
+
+        <div class="god-card">
+          <div>
+            <div class="god-header">
+              <span class="god-name">useAuth()</span>
+              <span class="god-badge">20 Aristas</span>
+            </div>
+            <div class="god-meta">client/src/context/AuthContext.jsx:64</div>
+            <p class="god-desc">
+              Custom Hook de sesión y control de acceso en el frontend. Conecta el estado del usuario logueado con las validaciones de permisos RBAC y delega el token a cookies seguras del navegador.
+            </p>
+          </div>
+        </div>
+
+        <div class="god-card">
+          <div>
+            <div class="god-header">
+              <span class="god-name">index.routes.js</span>
+              <span class="god-badge">20 Aristas</span>
+            </div>
+            <div class="god-meta">server/src/routes/index.routes.js:1</div>
+            <p class="god-desc">
+              Punto de bifurcación de la API. Conecta y protege de forma granular cada submódulo (/auth, /usuarios, /vehiculos, /conductores, /viajes, /dashboard y /finanzas) mediante middlewares dedicados.
+            </p>
+          </div>
+        </div>
+
+        <div class="god-card">
+          <div>
+            <div class="god-header">
+              <span class="god-name">logAudit()</span>
+              <span class="god-badge">14 Aristas</span>
+            </div>
+            <div class="god-meta">server/src/services/audit.service.js:32</div>
+            <p class="god-desc">
+              Servicio de auditoría forense inmutable. Recibe clientes transaccionales ACID de Prisma (tx) para garantizar que ninguna mutación de negocio quede huérfana de bitácora histórica.
+            </p>
+          </div>
+        </div>
+
+        <div class="god-card">
+          <div>
+            <div class="god-header">
+              <span class="god-name">trip.service.js</span>
+              <span class="god-badge">13 Aristas</span>
+            </div>
+            <div class="god-meta">server/src/services/trip.service.js:1</div>
+            <p class="god-desc">
+              Cerebro del dominio de transporte. Implementa la lógica de cálculo de fletes y pagos de conductores tras una refactorización que redujo su esfuerzo cognitivo Halstead en un 37.6%.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Desglose por Capas -->
+    <section class="section">
+      <h2 class="section-title">
+        Capas y Módulos de la Solución
+      </h2>
+      <div class="layers-grid">
+        
+        <!-- Backend MVC -->
+        <div class="layer-card">
+          <h3 class="layer-title">1. Backend: MVC Potenciado</h3>
+          <ul class="layer-list">
+            <li><strong>Controladores Delgados:</strong> Limitan su responsabilidad a extraer parámetros de <code>req</code> y emitir respuestas HTTP estándar.</li>
+            <li><strong>Servicios Core:</strong> Centralizan todas las mutaciones de datos, validaciones y cálculos de negocio puros.</li>
+            <li><strong>Manejo de Errores:</strong> Centralizado en <code>errorHandler.js</code> con códigos HTTP semánticos y traducción de códigos del ORM.</li>
+            <li><strong>Desacoplamiento:</strong> Los servicios son invocables desde API REST, CLI o scripts sin depender del protocolo HTTP.</li>
+          </ul>
+        </div>
+
+        <!-- Seguridad -->
+        <div class="layer-card sec">
+          <h3 class="layer-title">2. Seguridad & Hardening</h3>
+          <ul class="layer-list">
+            <li><strong>Protección de Sesión:</strong> Tokens JWT custodiados exclusivamente en cookies con directivas <code>HttpOnly</code>, <code>SameSite</code> y <code>Secure</code> (inmunes a XSS).</li>
+            <li><strong>Defensa perimetral:</strong> <code>Helmet</code> para cabeceras HTTP y <code>express-rate-limit</code> diferenciado (limitador estricto para login y general para API).</li>
+            <li><strong>RBAC Granular:</strong> Middleware <code>adminMiddleware</code> que restringe rutas sensibles (usuarios y finanzas).</li>
+            <li><strong>Auditoría Forense:</strong> Snapshots delta en formato JSON (<code>oldValues</code> / <code>newValues</code>) con captura de IP y User-Agent para no repudio.</li>
+          </ul>
+        </div>
+
+        <!-- Persistencia -->
+        <div class="layer-card db">
+          <h3 class="layer-title">3. Persistencia & Datos (3NF)</h3>
+          <ul class="layer-list">
+            <li><strong>PostgreSQL 15 + Prisma 7:</strong> Acceso mediante pool nativo con <code>@prisma/adapter-pg</code> para máxima concurrencia.</li>
+            <li><strong>Modelo Relacional Normalizado:</strong> Tablas <code>users</code>, <code>refresh_tokens</code>, <code>audit_logs</code>, <code>drivers</code>, <code>vehicles</code> y <code>trips</code>.</li>
+            <li><strong>Borrado Lógico (Soft Delete):</strong> Prohibición de borrado físico en entidades operativas mediante campos <code>deletedAt</code> y <code>activo: false</code>.</li>
+            <li><strong>Atomicidad ACID:</strong> Creación y auditoría vinculadas indisolublemente bajo <code>prisma.</code>.</li>
+          </ul>
+        </div>
+
+        <!-- Frontend -->
+        <div class="layer-card front">
+          <h3 class="layer-title">4. Frontend SPA (React 18)</h3>
+          <ul class="layer-list">
+            <li><strong>Tooling Moderno:</strong> Construido sobre Vite con Fast Refresh (HMR) y módulos ECMAScript nativos.</li>
+            <li><strong>Gestión de Estado:</strong> <code>AuthContext</code> proporciona contexto global de autenticación sin almacenar tokens en <code>localStorage</code>.</li>
+            <li><strong>Componentes Guardianes:</strong> <code>ProtectedRoute</code> y <code>AdminRoute</code> evitan renderizado de interfaces no autorizadas.</li>
+            <li><strong>Diseño Accesible:</strong> Bootstrap estilizado, Lucide Icons, soporte de modo oscuro y formato horario estándar UTC.</li>
+          </ul>
+        </div>
+
+        <!-- Calidad y QA -->
+        <div class="layer-card qa">
+          <h3 class="layer-title">5. Calidad ISO/IEC 25010 SQuaRE</h3>
+          <ul class="layer-list">
+            <li><strong>Adecuación Funcional:</strong> Suites de pruebas automatizadas E2E con <code>Selenium WebDriver</code>.</li>
+            <li><strong>Fiabilidad & Resiliencia:</strong> Pruebas de integración shell para lockout (bloqueo por intentos fallidos) y validaciones de entrada.</li>
+            <li><strong>Seguridad Comprobada:</strong> Suites dedicadas de pentesting (<code>test-security-hardcore.js</code> y <code>test-selenium-security.js</code>).</li>
+            <li><strong>Mantenibilidad del Código:</strong> Reducción activa de la complejidad ciclomática y del esfuerzo mental de Halstead en controladores y servicios.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Comunidades Destacadas del Grafo -->
+    <section class="section">
+      <h2 class="section-title">
+        Comunidades Clave del Grafo de Conocimiento
+      </h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Comunidad Funcional</th>
+              <th>Nodos</th>
+              <th>Cohesión</th>
+              <th>Componentes Representativos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>0</code></td>
+              <td><strong>Backend Controllers & Services</strong></td>
+              <td>49</td>
+              <td>0.09</td>
+              <td><code>auth.controller.js</code>, <code>driver.service.js</code>, <code>vehicle.service.js</code>, <code>user.controller.js</code></td>
+            </tr>
+            <tr>
+              <td><code>1</code></td>
+              <td><strong>API Routing, Middlewares & Schemas</strong></td>
+              <td>37</td>
+              <td>0.11</td>
+              <td><code>index.routes.js</code>, <code>authMiddleware()</code>, <code>adminMiddleware()</code>, <code>validate()</code></td>
+            </tr>
+            <tr>
+              <td><code>2</code></td>
+              <td><strong>Frontend React UI & Auth</strong></td>
+              <td>32</td>
+              <td>0.18</td>
+              <td><code>App.jsx</code>, <code>AuthContext.jsx</code>, <code>useAuth()</code>, <code>ProtectedRoute.jsx</code></td>
+            </tr>
+            <tr>
+              <td><code>4</code></td>
+              <td><strong>ISO 25010 Quality & QA Specs</strong></td>
+              <td>28</td>
+              <td>0.08</td>
+              <td><code>DOCUMENTATION.md</code>, <code>ISO_25010_QUALITY_MODEL.md</code>, <code>TESTING_GUIDE.md</code></td>
+            </tr>
+            <tr>
+              <td><code>6</code></td>
+              <td><strong>Architecture Methods & Specs</strong></td>
+              <td>20</td>
+              <td>0.15</td>
+              <td><code>METODOS_Y_CLASES.md</code>, <code>AuditService</code>, <code>TripService (Halstead Refactor)</code></td>
+            </tr>
+            <tr>
+              <td><code>9</code></td>
+              <td><strong>Trip Logistics Domain & Calculations</strong></td>
+              <td>16</td>
+              <td>0.21</td>
+              <td><code>calculateConductorPay()</code>, <code>createTrip()</code>, <code>validateActiveDriver()</code></td>
+            </tr>
+            <tr>
+              <td><code>10</code></td>
+              <td><strong>Project Overview & Docker Setup</strong></td>
+              <td>15</td>
+              <td>0.15</td>
+              <td><code>docker-compose.yml</code>, <code>novapalma-server</code>, <code>novapalma-client</code>, <code>novapalma-db</code></td>
+            </tr>
+            <tr>
+              <td><code>11</code></td>
+              <td><strong>Data Dictionary & User Manual</strong></td>
+              <td>15</td>
+              <td>0.18</td>
+              <td><code>DATA_DICTIONARY.md</code>, Tablas <code>trips</code>, <code>users</code>, <code>drivers</code>, <code>audit_logs</code></td>
+            </tr>
+            <tr>
+              <td><code>13</code></td>
+              <td><strong>Express App Core & Rate Limiters</strong></td>
+              <td>7</td>
+              <td>0.33</td>
+              <td><code>app.js</code>, <code>loginLimiter</code>, <code>apiLimiter</code>, <code>allowedOrigins</code></td>
+            </tr>
+            <tr>
+              <td><code>14-25</code></td>
+              <td><strong>Suites de Pruebas & Hardening</strong></td>
+              <td>~20</td>
+              <td>0.20-0.53</td>
+              <td><code>test-lockout.sh</code>, <code>test-selenium.js</code>, <code>test-security-hardcore.js</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      Generado a partir del análisis del grafo de conocimiento de Graphify para el proyecto <strong>Novapalma</strong>.<br>
+      Stack PERN &bull; Arquitectura Limpia &bull; Auditoría Forense ACID &bull; Norma ISO/IEC 25010
+    </footer>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#0d1321',
+        primaryColor: '#1e293b',
+        primaryTextColor: '#f3f4f6',
+        primaryBorderColor: '#3b82f6',
+        lineColor: '#60a5fa',
+        secondaryColor: '#111827',
+        tertiaryColor: '#1f2937'
+      }
+    });
+  </script>
+</body>
+</html>
